@@ -1,98 +1,200 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import React from "react";
+import {
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { useRouter } from "expo-router";
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const router = useRouter();
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  return (
+    <View style={styles.container}>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        
+        {/* BANNER */}
+        <View style={styles.bannerContainer}>
+          <Image
+            source={require("../../assets/images/capa.png")}
+            style={styles.banner}
+            resizeMode="cover"
+          />
+
+          <View style={styles.textOverlay}>
+            <Text style={styles.tituloOverlay}>Studio Marcela!</Text>
+          </View>
+        </View>
+
+        <Text style={styles.subtituloOverlay}>
+          Realce sua beleza com quem entende de cabelo!
+        </Text>
+
+        {/* BOTÃO AGENDAR */}
+        <TouchableOpacity
+          style={styles.botaoPrincipal}
+          onPress={() => router.push("/agendar")}
+        >
+          <Text style={styles.botaoTexto}>AGENDAR HORÁRIO</Text>
+        </TouchableOpacity>
+
+        {/* SERVIÇOS */}
+        <Text style={styles.titulo}>Nossos Serviços</Text>
+
+        <View style={styles.grid}>
+          {["Corte & Escova", "Coloração", "Hidratação", "Progressiva"].map(
+            (item, index) => (
+              <View key={index} style={styles.card}>
+                <Text style={styles.cardTitulo}>{item}</Text>
+              </View>
+            )
+          )}
+        </View>
+
+        {/* PROMOÇÃO */}
+        <View style={styles.promocao}>
+          <Text style={styles.promoTitulo}>Promoção da Semana</Text>
+          <Text style={styles.promoServico}>Escova + Hidratação</Text>
+          <Text style={styles.promoPreco}>R$ 99,90</Text>
+
+          <TouchableOpacity
+            style={styles.botaoPromo}
+            onPress={() => router.push("/agendar")}
+          >
+            <Text style={styles.botaoPromoTexto}>APROVEITAR</Text>
+          </TouchableOpacity>
+        </View>
+
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: {
+    flex: 1,
+    backgroundColor: "#ffffff",
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+
+  banner: {
+    width: "100%",
+    height: 260,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+
+  bannerContainer: {
+    position: "relative",
+  },
+
+  textOverlay: {
+    position: "absolute",
+    bottom: 30,
+    left: 20,
+    right: 20,
+  },
+
+  tituloOverlay: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#951be6",
+  },
+
+  subtituloOverlay: {
+    fontSize: 17,
+    color: "#b40cec",
+    marginTop: 10,
+    marginHorizontal: 20,
+  },
+
+  botaoPrincipal: {
+    backgroundColor: "#8A2BE2",
+    margin: 20,
+    padding: 18,
+    borderRadius: 30,
+    alignItems: "center",
+
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+
+  botaoTexto: {
+    color: "#f4f1f1",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+
+  titulo: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginLeft: 20,
+    marginBottom: 15,
+  },
+
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-around",
+  },
+
+  card: {
+    backgroundColor: "#cf7df3",
+    width: "42%",
+    padding: 20,
+    borderRadius: 20,
+    marginBottom: 15,
+    alignItems: "center",
+
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+
+  cardTitulo: {
+    fontWeight: "bold",
+  },
+
+  promocao: {
+    backgroundColor: "#8A2BE2",
+    margin: 20,
+    padding: 20,
+    borderRadius: 25,
+  },
+
+  promoTitulo: {
+    color: "#fff",
+    fontSize: 16,
+  },
+
+  promoServico: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
+    marginTop: 5,
+  },
+
+  promoPreco: {
+    color: "#fff",
+    fontSize: 26,
+    fontWeight: "bold",
+    marginVertical: 10,
+  },
+
+  botaoPromo: {
+    backgroundColor: "#fff",
+    padding: 12,
+    borderRadius: 20,
+    alignItems: "center",
+  },
+
+  botaoPromoTexto: {
+    color: "#8A2BE2",
+    fontWeight: "bold",
   },
 });
