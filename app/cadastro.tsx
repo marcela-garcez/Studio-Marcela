@@ -1,5 +1,7 @@
 import React, { useState } from "react";
-import {View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Platform,
+import {
+  View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView,
+  KeyboardAvoidingView, Platform, Alert, ActivityIndicator
 } from "react-native";
 
 import MaskInput from "react-native-mask-input";
@@ -10,179 +12,277 @@ import { set, ref } from "firebase/database";
 import { auth, database } from "../src/services/connectionFirebase";
 
 export default function Cadastro() {
-  const [nome, setNome] = useState<string>("");
-  const [email, setEmail] = useState<string>("");
-  const [telefone, setTelefone] = useState<string>("");
-  const [senha, setSenha] = useState<string>("");
-  const [confirmarSenha, setConfirmarSenha] = useState<string>("");
+  const [nome, setNome] = useState("");
+  const [email, setEmail] = useState("");
+  const [telefone, setTelefone] = useState("");
+  const [senha, setSenha] = useState("");
+  const [confirmarSenha, setConfirmarSenha] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  async function cadastrar() {
-    // validação de campos vazios
-    if (!nome || !email || !telefone || !senha || !confirmarSenha) {
-      alert("Preencha todos os campos!");
-      return;
-    }
+  const [erroNome, setErroNome] = useState("");
+  const [erroEmail, setErroEmail] = useState("");
+  const [erroTelefone, setErroTelefone] = useState("");
+  const [erroSenha, setErroSenha] = useState("");
 
-    // validação de senha
-    if (senha !== confirmarSenha) {
-      alert("As senhas não coincidem!");
-      return;
-    }
-
-    const usuario = {
-      nome,
-      email,
-      telefone,
-      senha,
-    };
-
-    try {
-      // salva localmente
-      await AsyncStorage.setItem("usuario", JSON.stringify(usuario));
-
-      // registra no firebase
-      await register();
-
-      alert("Cadastro realizado com sucesso!");
-      router.replace("/login");
-    } catch (error) {
-      console.log(error);
-      alert("Erro ao cadastrar usuário");
+  // --- VALIDAÇÕES ---
+  function validarNome(text: string) {
+    setNome(text);
+    if (text.trim().split(" ").length < 2) {
+      setErroNome("Digite seu nome completo");
+    } else {
+      setErroNome("");
     }
   }
 
-  async function register(): Promise<void> {
+  function validarEmail(text: string) {
+    setEmail(text);
+    const reg = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w\w+)+$/;
+    if (!reg.test(text)) {
+      setErroEmail("E-mail inválido");
+    } else {
+      setErroEmail("");
+    }
+  }
+
+  function validarTelefone(text: string) {
+    setTelefone(text);
+    const numeros = text.replace(/\D/g, "");
+    if (numeros.length < 11) {
+      setErroTelefone("Telefone incompleto");
+    } else {
+      setErroTelefone("");
+    }
+  }
+
+  function validarSenha(text: string) {
+    setSenha(text);
+    if (text.length < 6) {
+      setErroSenha("Mínimo 6 caracteres");
+    } else {
+      setErroSenha("");
+    }
+  }
+
+  // --- FUNÇÃO CADASTRAR ---
+  async function cadastrar() {
+    if (!nome || !email || !telefone || !senha || !confirmarSenha) {
+      Alert.alert("Erro", "Preencha todos os campos.");
+      return;
+    }
+
+    if (erroNome || erroEmail || erroTelefone || erroSenha) {
+      Alert.alert("Erro", "Verifique os campos em vermelho.");
+      return;
+    }
+
+    if (senha !== confirmarSenha) {
+      Alert.alert("Erro", "As senhas não conferem.");
+      return;
+    }
+
+    setLoading(true);
+
     try {
+      // 1. Criar usuário no Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(
         auth,
-        email,
+        email.trim(),
         senha
       );
 
       const user = userCredential.user;
 
-      if (user) {
-        await set(ref(database, "users/" + user.uid), {
-          uid: user.uid,
-          name: nome,
-          email: email,
-          telefone: telefone,
-          createdAt: new Date().toISOString(),
-        });
-      }
-    } catch (error: any) {
-      console.log(error);
+      // 2. Salvar no Realtime Database
+      await set(ref(database, `users/${user.uid}`), {
+        uid: user.uid,
+        nome,
+        email: email.trim(),
+        telefone,
+        createdAt: new Date().toISOString(),
+      });
 
-      if (error.message) {
-        alert(error.message);
-      } else {
-        alert("Erro ao cadastrar usuário");
-      }
+      // 3. Salvar no AsyncStorage
+      await AsyncStorage.setItem(
+        "usuario",
+        JSON.stringify({ nome, email, telefone })
+      );
+
+      setLoading(false);
+
+      // ✅ ALERTA
+      Alert.alert("Sucesso", "Cadastro realizado com sucesso!");
+
+      // ✅ NAVEGAÇÃO FORÇADA (FUNCIONA NO EXPO ROUTER)
+      setTimeout(() => {
+        console.log("Indo para login...");
+        router.replace("/login"); // ⚠️ pode precisar ajustar o caminho
+      }, 500);
+
+    } catch (error: any) {
+      setLoading(false);
+      console.log("ERRO:", error.code);
+
+      let mensagem = "Erro ao realizar cadastro.";
+      if (error.code === "auth/email-already-in-use") mensagem = "E-mail já cadastrado!";
+      if (error.code === "auth/weak-password") mensagem = "Senha muito fraca!";
+      if (error.code === "auth/invalid-email") mensagem = "E-mail inválido!";
+
+      Alert.alert("Ops!", mensagem);
     }
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.titulo}>Criar Conta</Text>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={{ flex: 1 }}
+    >
+      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+        <View style={styles.header}>
+          <Text style={styles.titulo}>Criar Conta</Text>
+          <Text style={styles.subtitulo}>Rápido, fácil e seguro.</Text>
+        </View>
 
-      <TextInput
-        placeholder="Nome Completo"
-        style={styles.input}
-        value={nome}
-        onChangeText={setNome}
-      />
+        <View style={styles.form}>
+          <Text style={styles.label}>Nome Completo</Text>
+          <TextInput
+            placeholder="Seu nome"
+            style={[styles.input, erroNome ? styles.inputErro : null]}
+            value={nome}
+            onChangeText={validarNome}
+          />
+          {erroNome && <Text style={styles.erroTexto}>{erroNome}</Text>}
 
-      <TextInput
-        placeholder="Email"
-        style={styles.input}
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-      />
+          <Text style={styles.label}>E-mail</Text>
+          <TextInput
+            placeholder="exemplo@email.com"
+            style={[styles.input, erroEmail ? styles.inputErro : null]}
+            value={email}
+            onChangeText={validarEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+          {erroEmail && <Text style={styles.erroTexto}>{erroEmail}</Text>}
 
-      <MaskInput
-        value={telefone}
-        onChangeText={(masked) => setTelefone(masked)}
-        mask={[
-          "(",
-          /\d/,
-          /\d/,
-          ")",
-          " ",
-          /\d/,
-          /\d/,
-          /\d/,
-          /\d/,
-          /\d/,
-          "-",
-          /\d/,
-          /\d/,
-          /\d/,
-          /\d/,
-        ]}
-        placeholder="Telefone"
-        style={styles.input}
-        keyboardType="numeric"
-      />
+          <Text style={styles.label}>Telefone</Text>
+          <MaskInput
+            value={telefone}
+            onChangeText={(masked) => validarTelefone(masked)}
+            mask={["(", /\d/, /\d/, ")", " ", /\d/, /\d/, /\d/, /\d/, /\d/, "-", /\d/, /\d/, /\d/, /\d/]}
+            placeholder="(00) 00000-0000"
+            style={[styles.input, erroTelefone ? styles.inputErro : null]}
+            keyboardType="numeric"
+          />
+          {erroTelefone && <Text style={styles.erroTexto}>{erroTelefone}</Text>}
 
-      <TextInput
-        placeholder="Senha"
-        style={styles.input}
-        secureTextEntry
-        value={senha}
-        onChangeText={setSenha}
-      />
+          <Text style={styles.label}>Senha</Text>
+          <TextInput
+            placeholder="******"
+            style={[styles.input, erroSenha ? styles.inputErro : null]}
+            secureTextEntry
+            value={senha}
+            onChangeText={validarSenha}
+          />
+          {erroSenha && <Text style={styles.erroTexto}>{erroSenha}</Text>}
 
-      <TextInput
-        placeholder="Confirmar Senha"
-        style={styles.input}
-        secureTextEntry
-        value={confirmarSenha}
-        onChangeText={setConfirmarSenha}
-      />
+          <Text style={styles.label}>Confirmar Senha</Text>
+          <TextInput
+            placeholder="******"
+            style={styles.input}
+            secureTextEntry
+            value={confirmarSenha}
+            onChangeText={setConfirmarSenha}
+          />
+        </View>
 
-      <TouchableOpacity style={styles.botao} onPress={cadastrar}>
-        <Text style={styles.botaoTexto}>CADASTRAR</Text>
-      </TouchableOpacity>
-    </ScrollView>
+        <TouchableOpacity
+          style={styles.botao}
+          onPress={cadastrar}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#FFF" />
+          ) : (
+            <Text style={styles.botaoTexto}>CADASTRAR</Text>
+          )}
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => router.push("/login")} style={styles.linkLogin}>
+          <Text style={styles.linkLoginTexto}>
+            Já tem conta? <Text style={{ fontWeight: 'bold', color: '#8A2BE2' }}>Entrar</Text>
+          </Text>
+        </TouchableOpacity>
+
+        <View style={{ height: 40 }} />
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    justifyContent: "center",
-    padding: 20,
-    backgroundColor: "#fff",
+    paddingHorizontal: 25,
+    paddingTop: 50,
+    backgroundColor: "#F8F9FA",
   },
-
-  titulo: {
-    fontSize: 28,
-    fontWeight: "bold",
-    textAlign: "center",
+  header: {
     marginBottom: 30,
-    color: "#8A2BE2",
   },
-
+  titulo: {
+    fontSize: 32,
+    fontWeight: "bold",
+    color: "#4B0082",
+  },
+  subtitulo: {
+    fontSize: 16,
+    color: "#666",
+  },
+  form: {
+    marginBottom: 10,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#444",
+    marginBottom: 5,
+    marginTop: 10,
+  },
   input: {
+    backgroundColor: "#FFF",
     borderWidth: 1,
-    borderColor: "#ddd",
-    padding: 15,
-    borderRadius: 15,
-    marginBottom: 15,
+    borderColor: "#DDD",
+    padding: 14,
+    borderRadius: 12,
+    fontSize: 16,
   },
-
+  inputErro: {
+    borderColor: "#FF3B30",
+  },
+  erroTexto: {
+    color: "#FF3B30",
+    fontSize: 12,
+    marginTop: 4,
+  },
   botao: {
     backgroundColor: "#8A2BE2",
     padding: 18,
-    borderRadius: 25,
+    borderRadius: 15,
     alignItems: "center",
-    marginTop: 10,
+    marginTop: 20,
+    height: 60,
+    justifyContent: 'center'
   },
-
   botaoTexto: {
-    color: "#fff",
+    color: "#FFF",
     fontWeight: "bold",
-    fontSize: 16,
+    fontSize: 18,
   },
+  linkLogin: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  linkLoginTexto: {
+    color: "#666",
+    fontSize: 15,
+  }
 });
