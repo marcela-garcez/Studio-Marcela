@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView,
-  KeyboardAvoidingView, Platform, Alert, ActivityIndicator
+  KeyboardAvoidingView, Platform, ActivityIndicator
 } from "react-native";
 
 import MaskInput from "react-native-mask-input";
@@ -10,13 +10,26 @@ import { router } from "expo-router";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { set, ref } from "firebase/database";
 import { auth, database } from "../src/services/connectionFirebase";
+import { showAlert } from "../src/utils/feedback";
 
+function getPasswordStrength(password: string) {
+  let strength = 0;
+  if (password.length >= 6) strength += 1;
+  if (/[A-Z]/.test(password)) strength += 1;
+  if (/\d/.test(password)) strength += 1;
+  if (/[@$!%*?&]/.test(password)) strength += 1;
+
+  if (strength <= 2) return { label: "Fraca", color: "#FF6B6B" };
+  if (strength === 3) return { label: "Média", color: "#FFD166" };
+  return { label: "Forte", color: "#06D6A0" };
+}
 export default function Cadastro() {
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [telefone, setTelefone] = useState("");
   const [senha, setSenha] = useState("");
   const [confirmarSenha, setConfirmarSenha] = useState("");
+  const [forcaSenha, setForcaSenha] = useState({ label: "", color: "" }); 
   const [loading, setLoading] = useState(false);
 
   const [erroNome, setErroNome] = useState("");
@@ -24,15 +37,54 @@ export default function Cadastro() {
   const [erroTelefone, setErroTelefone] = useState("");
   const [erroSenha, setErroSenha] = useState("");
 
+  const passwordRules = {
+    length: senha.length >= 8,
+    uppercase: /[A-Z]/.test(senha),
+    number: /\d/.test(senha),
+    symbol: /[@$!%*?&]/.test(senha),
+  };
+
+function PasswordRule({ valid, text }: { valid: boolean; text: string }) {
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 4 }}>
+      <Text style={{ color: valid ? "green" : "red", marginRight: 8 }}>
+        {valid ? "✓" : "✗"}
+      </Text>
+      <Text>{text}</Text>
+    </View>
+  );
+}
+
+function isValidEmail(text: string) {
+  const reg = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w\w+)+$/;
+  return reg.test(text);
+}
+
+function isValidTelefone(text: string) {
+  return text.replace(/\D/g, "").length >= 11;
+}
+
+function isValidSenha(text: string) {
+  return text.length >= 8;
+}
+
+const isFormValid =
+  nome.trim().split(" ").length >= 2 &&
+  isValidEmail(email) &&
+  isValidTelefone(telefone) &&
+  isValidSenha(senha) &&
+  senha === confirmarSenha;
+
   // --- VALIDAÇÕES ---
   function validarNome(text: string) {
-    setNome(text);
-    if (text.trim().split(" ").length < 2) {
-      setErroNome("Digite seu nome completo");
-    } else {
-      setErroNome("");
-    }
+  setNome(text); // ← estava faltando isso também!
+
+  if (text.trim().split(" ").length < 2) {
+    setErroNome("Digite seu nome completo");
+  } else {
+    setErroNome("");
   }
+}
 
   function validarEmail(text: string) {
     setEmail(text);
@@ -56,8 +108,8 @@ export default function Cadastro() {
 
   function validarSenha(text: string) {
     setSenha(text);
-    if (text.length < 6) {
-      setErroSenha("Mínimo 6 caracteres");
+    if (text.length < 8) {
+      setErroSenha("Mínimo 8 caracteres");
     } else {
       setErroSenha("");
     }
@@ -66,17 +118,17 @@ export default function Cadastro() {
   // --- FUNÇÃO CADASTRAR ---
   async function cadastrar() {
     if (!nome || !email || !telefone || !senha || !confirmarSenha) {
-      Alert.alert("Erro", "Preencha todos os campos.");
+      showAlert("Erro", "Preencha todos os campos.");
       return;
     }
 
     if (erroNome || erroEmail || erroTelefone || erroSenha) {
-      Alert.alert("Erro", "Verifique os campos em vermelho.");
+      showAlert("Erro", "Verifique os campos em vermelho.");
       return;
     }
 
     if (senha !== confirmarSenha) {
-      Alert.alert("Erro", "As senhas não conferem.");
+      showAlert("Erro", "As senhas não conferem.");
       return;
     }
 
@@ -110,12 +162,12 @@ export default function Cadastro() {
       setLoading(false);
 
       // ✅ ALERTA
-      Alert.alert("Sucesso", "Cadastro realizado com sucesso!");
+      showAlert("Sucesso", "Cadastro realizado com sucesso!");
 
       // ✅ NAVEGAÇÃO FORÇADA (FUNCIONA NO EXPO ROUTER)
       setTimeout(() => {
         console.log("Indo para login...");
-        router.replace("/login"); // ⚠️ pode precisar ajustar o caminho
+        router.push("/login"); // ⚠️ pode precisar ajustar o caminho
       }, 500);
 
     } catch (error: any) {
@@ -127,7 +179,7 @@ export default function Cadastro() {
       if (error.code === "auth/weak-password") mensagem = "Senha muito fraca!";
       if (error.code === "auth/invalid-email") mensagem = "E-mail inválido!";
 
-      Alert.alert("Ops!", mensagem);
+      showAlert("Ops!", mensagem);
     }
   }
 
@@ -182,6 +234,11 @@ export default function Cadastro() {
             value={senha}
             onChangeText={validarSenha}
           />
+
+          <PasswordRule valid={isValidSenha(senha)} text="Pelo menos 8 caracteres" />
+          <PasswordRule valid={passwordRules.uppercase} text="Inclui letra maiúscula" />
+          <PasswordRule valid={passwordRules.number} text="Inclui número" />
+          <PasswordRule valid={passwordRules.symbol} text="Inclui símbolo (@$!%*?&)" />
           {erroSenha && <Text style={styles.erroTexto}>{erroSenha}</Text>}
 
           <Text style={styles.label}>Confirmar Senha</Text>

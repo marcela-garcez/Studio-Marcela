@@ -1,13 +1,15 @@
 import React, { useState } from "react";
 import { 
   View, Text, TextInput, TouchableOpacity, StyleSheet, 
-  KeyboardAvoidingView, Platform, Alert, ActivityIndicator 
+  KeyboardAvoidingView, Platform, ActivityIndicator 
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../src/services/connectionFirebase"; 
+import { get, ref } from "firebase/database";
+import { auth, database } from "../src/services/connectionFirebase"; 
 import { Ionicons } from "@expo/vector-icons";
+import { showAlert } from "../src/utils/feedback";
 
 export default function Login() {
   const router = useRouter();
@@ -17,7 +19,7 @@ export default function Login() {
 
   async function entrar() {
     if (!email || !senha) {
-      Alert.alert("Erro", "Preencha todos os campos!");
+      showAlert("Erro", "Preencha todos os campos!");
       return;
     }
 
@@ -26,9 +28,19 @@ export default function Login() {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, senha);
       const user = userCredential.user;
+      const snapshot = await get(ref(database, `users/${user.uid}`));
+      const dadosUsuario = snapshot.exists() ? snapshot.val() : {};
 
       // Salva os dados localmente
-      await AsyncStorage.setItem("usuarioLogado", JSON.stringify({ uid: user.uid, email: user.email }));
+      await AsyncStorage.setItem(
+        "usuario",
+        JSON.stringify({
+          uid: user.uid,
+          nome: dadosUsuario.nome || user.displayName || "Usuário",
+          email: dadosUsuario.email || user.email,
+          telefone: dadosUsuario.telefone || "",
+        })
+      );
       
       console.log("Login realizado com sucesso! Tentando navegar...");
 
@@ -41,7 +53,7 @@ export default function Login() {
       if (error.code === "auth/invalid-credential") mensagem = "E-mail ou senha incorretos.";
       if (error.code === "auth/user-not-found") mensagem = "Usuário não encontrado.";
       
-      Alert.alert("Erro", mensagem);
+      showAlert("Erro", mensagem);
     } finally {
       setLoading(false);
     }
@@ -89,6 +101,13 @@ export default function Login() {
         >
           {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.textoBotao}>ENTRAR</Text>}
         </TouchableOpacity>
+         <TouchableOpacity onPress={() => router.push("/cadastro")}>
+          <Text style={styles.linkTexto}>
+            Não tem conta? <Text style={{ fontWeight: 'bold' }}>Cadastre-se</Text>
+          </Text>
+        </TouchableOpacity>
+
+
       </View>
     </KeyboardAvoidingView>
   );
@@ -112,6 +131,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     height: 60,
   },
+  linkTexto: { color: "#FFF", textAlign: "center", marginTop: 15 },
   icon: { marginRight: 10 },
   input: { flex: 1, fontSize: 16, color: "#FFF" }, // Texto branco
   botao: {

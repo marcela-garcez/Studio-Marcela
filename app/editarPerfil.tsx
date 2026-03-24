@@ -4,41 +4,46 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  Alert,
 } from "react-native";
 import { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
+import { showAlert } from "../src/utils/feedback";
 
 export default function EditarPerfil() {
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
+  const [telefone, setTelefone] = useState("");
 
   useEffect(() => {
     carregarUsuario();
   }, []);
 
-  async function carregarUsuario() {
-    const dados = await AsyncStorage.getItem("usuarioLogado");
+async function carregarUsuario() {
+  const usuarioJson = await AsyncStorage.getItem("usuario");
 
-    if (dados) {
-      const usuario = JSON.parse(dados);
-      setNome(usuario.nome);
-      setEmail(usuario.email);
-    }
+  if (usuarioJson) {
+    const usuario = JSON.parse(usuarioJson);
+    setNome(usuario.nome || "");
+    setEmail(usuario.email || "");
+    setTelefone(usuario.telefone || "");
   }
+}
 
   async function salvar() {
-    if (!nome || !email) {
-      Alert.alert("Erro", "Preencha todos os campos");
+    if (!nome || !email || !telefone) {
+      showAlert("Erro", "Preencha todos os campos");
       return;
     }
 
-    const novoUsuario = { nome, email };
+    const novoUsuario = { nome, email, telefone };
 
-    await AsyncStorage.setItem("usuarioLogado", JSON.stringify(novoUsuario));
-
-    Alert.alert("Sucesso", "Perfil atualizado!");
+await AsyncStorage.setItem("usuario", JSON.stringify({
+  nome,
+  email,
+  telefone
+}));
+    showAlert("Sucesso", "Perfil atualizado!");
     router.back();
   }
 
@@ -59,6 +64,14 @@ export default function EditarPerfil() {
         onChangeText={setEmail}
         style={styles.input}
         keyboardType="email-address"
+      />
+
+      <TextInput
+        placeholder="telefone"
+        value={telefone}
+        onChangeText={setTelefone}
+        style={styles.input}
+        keyboardType="phone-pad"
       />
 
       <TouchableOpacity style={styles.botao} onPress={salvar}>

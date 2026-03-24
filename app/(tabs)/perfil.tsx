@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -6,51 +6,59 @@ import {
   Image,
   TouchableOpacity,
   ScrollView,
-  Alert,
   StatusBar,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAgendamento } from "../../context/AgendamentosContext";
+import { signOut } from "firebase/auth";
+import { auth } from "../../src/services/connectionFirebase";
+import { showConfirm } from "../../src/utils/feedback";
 
 export default function Perfil() {
   const router = useRouter();
   const [usuario, setUsuario] = useState<any>(null);
-  
-  const { agendamentos, remover } = useAgendamento(); 
+  const { agendamentos, remover } = useAgendamento();
 
-  useEffect(() => {
-    verificarLogin();
-  }, []);
-
-  async function verificarLogin() {
-    const dados = await AsyncStorage.getItem("usuarioLogado");
+  const verificarLogin = useCallback(async () => {
+    const dados = await AsyncStorage.getItem("usuario");
     if (!dados) {
       router.replace("/login");
       return;
     }
     setUsuario(JSON.parse(dados));
-  }
+  }, [router]);
+
+  useFocusEffect(
+    useCallback(() => {
+      verificarLogin();
+    }, [verificarLogin])
+  );
 
   async function confirmarExclusao(index: number) {
-    Alert.alert(
-      "Cancelar Agendamento",
-      "Deseja realmente remover este compromisso?",
-      [
-        { text: "Voltar", style: "cancel" },
-        { 
-          text: "Confirmar", 
-          style: "destructive", 
-          onPress: () => remover(index) 
-        },
-      ]
-    );
+    const confirmou = await showConfirm({
+      title: "Cancelar Agendamento",
+      message: "Deseja realmente remover este compromisso?",
+      confirmText: "Confirmar",
+      cancelText: "Voltar",
+    });
+
+    if (confirmou) {
+      await remover(index);
+    }
   }
 
   async function sair() {
-    await AsyncStorage.removeItem("usuarioLogado");
-    router.replace("/login");
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.log("Erro ao encerrar sessao no Firebase:", error);
+    } finally {
+      await AsyncStorage.removeItem("usuario");
+      setUsuario(null);
+      router.replace("/login");
+    }
   }
 
   if (!usuario) return null;
@@ -59,31 +67,37 @@ export default function Perfil() {
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <StatusBar barStyle="dark-content" />
 
-      {/* HEADER - Perfil do Usuário */}
       <View style={styles.header}>
         <View style={styles.avatarWrapper}>
-          <Image
-            source={require("../../assets/images/avatar.png")}
-            style={styles.avatar}
-          />
+          <Image source={require("../../assets/images/avatar.png")} style={styles.avatar} />
         </View>
-        <Text style={styles.nome}>{usuario.nome || "Usuário"}</Text>
+
+        <Text style={styles.nome}>{usuario.nome || "Usuario"}</Text>
         <Text style={styles.email}>{usuario.email}</Text>
+
+        <View style={styles.statsRow}>
+          <View style={styles.statCard}>
+            <Text style={styles.statNumero}>{agendamentos.length}</Text>
+            <Text style={styles.statLabel}>Agendamentos</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statNumero}>{usuario.telefone || "-"}</Text>
+            <Text style={styles.statLabel}>Telefone</Text>
+          </View>
+        </View>
       </View>
 
-      {/* BOTÃO NOVO AGENDAMENTO */}
       <TouchableOpacity
         style={styles.botaoAgendar}
-        activeOpacity={0.8}
+        activeOpacity={0.9}
         onPress={() => router.push("/agendar")}
       >
-        <Ionicons name="add-circle-outline" size={24} color="#fff" />
+        <Ionicons name="add-circle-outline" size={22} color="#fff" />
         <Text style={styles.textoBotao}>Novo Agendamento</Text>
       </TouchableOpacity>
 
-      {/* SEÇÃO DE AGENDAMENTOS */}
       <View style={styles.sectionHeader}>
-        <Text style={styles.titulo}>Seus Compromissos</Text>
+        <Text style={styles.titulo}>Seus compromissos</Text>
         <View style={styles.badge}>
           <Text style={styles.badgeText}>{agendamentos.length}</Text>
         </View>
@@ -91,203 +105,290 @@ export default function Perfil() {
 
       {agendamentos.length === 0 ? (
         <View style={styles.cardVazio}>
-          <Ionicons name="calendar-outline" size={40} color="#ccc" />
-          <Text style={styles.vazioText}>Nenhum horário marcado ainda</Text>
+          <View style={styles.emptyIconCircle}>
+            <Ionicons name="calendar-outline" size={34} color="#A78BFA" />
+          </View>
+          <Text style={styles.vazioTitulo}>Nada marcado por enquanto</Text>
+          <Text style={styles.vazioText}>
+            Assim que voce reservar um horario, ele vai aparecer aqui.
+          </Text>
         </View>
       ) : (
         agendamentos.map((item: any, index: number) => (
           <View key={index} style={styles.card}>
             <View style={styles.iconBox}>
-              <Ionicons name="cut-outline" size={22} color="#8A2BE2" />
+              <Ionicons name="cut-outline" size={22} color="#7C3AED" />
             </View>
 
             <View style={styles.info}>
               <Text style={styles.servico}>{item.servico}</Text>
-              <Text style={styles.data}>
-                {item.data} • {item.hora}
-              </Text>
+              <Text style={styles.data}>{item.data} • {item.hora}</Text>
             </View>
 
-            <TouchableOpacity
-              style={styles.btnDelete}
-              onPress={() => confirmarExclusao(index)}
-            >
-              <Ionicons name="trash-outline" size={18} color="#FF4D4D" />
+            <TouchableOpacity style={styles.btnDelete} onPress={() => confirmarExclusao(index)}>
+              <Ionicons name="trash-outline" size={18} color="#DC2626" />
             </TouchableOpacity>
           </View>
         ))
       )}
 
-      {/* MENU DE OPÇÕES (LISTA AGRUPADA) */}
-      <Text style={[styles.titulo, { marginTop: 25, marginBottom: 10 }]}>Configurações</Text>
+      <Text style={styles.configTitulo}>Configuracoes</Text>
       <View style={styles.menuContainer}>
         <TouchableOpacity style={styles.menuItem} onPress={() => router.push("/editarPerfil")}>
-          <View style={[styles.menuIcon, { backgroundColor: '#E0E7FF' }]}>
-            <Ionicons name="person-outline" size={20} color="#4338CA" />
+          <View style={[styles.menuIcon, { backgroundColor: "#EDE9FE" }]}>
+            <Ionicons name="person-outline" size={20} color="#5B21B6" />
           </View>
           <Text style={styles.menuTexto}>Editar Perfil</Text>
-          <Ionicons name="chevron-forward" size={18} color="#CCC" />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.menuItem}>
-          <View style={[styles.menuIcon, { backgroundColor: '#FEF3C7' }]}>
-            <Ionicons name="notifications-outline" size={20} color="#D97706" />
-          </View>
-          <Text style={styles.menuTexto}>Notificações</Text>
-          <Ionicons name="chevron-forward" size={18} color="#CCC" />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={[styles.menuItem, { borderBottomWidth: 0 }]}>
-          <View style={[styles.menuIcon, { backgroundColor: '#F3E8FF' }]}>
-            <Ionicons name="shield-checkmark-outline" size={20} color="#8A2BE2" />
-          </View>
-          <Text style={styles.menuTexto}>Privacidade</Text>
-          <Ionicons name="chevron-forward" size={18} color="#CCC" />
+          <Ionicons name="chevron-forward" size={18} color="#A8A0B5" />
         </TouchableOpacity>
       </View>
 
-      {/* BOTÃO SAIR */}
       <TouchableOpacity style={styles.botaoSair} onPress={sair}>
-        <Ionicons name="log-out-outline" size={20} color="#dc2626" />
+        <Ionicons name="log-out-outline" size={20} color="#DC2626" />
         <Text style={styles.textoSair}>Sair da Conta</Text>
       </TouchableOpacity>
 
-      <View style={{ height: 40 }} />
+      <View style={styles.espacoFinal} />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: "#F8F9FA", 
-    paddingHorizontal: 20 
+  container: {
+    flex: 1,
+    backgroundColor: "#F4F0FF",
+    paddingHorizontal: 20,
   },
-  header: { 
-    alignItems: "center", 
-    marginTop: 40, 
-    marginBottom: 30,
-    backgroundColor: '#FFF',
-    padding: 25,
+  header: {
+    alignItems: "center",
+    marginTop: 28,
+    marginBottom: 22,
+    backgroundColor: "#FFF",
+    padding: 24,
     borderRadius: 30,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.05,
-    shadowRadius: 15,
-    elevation: 2
+    shadowColor: "#7C3AED",
+    shadowOffset: { width: 0, height: 14 },
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
+    elevation: 4,
   },
   avatarWrapper: {
-    padding: 4,
-    borderRadius: 60,
+    padding: 5,
+    borderRadius: 999,
     borderWidth: 2,
-    borderColor: "#8A2BE2",
-    marginBottom: 15,
+    borderColor: "#C4B5FD",
+    marginBottom: 14,
   },
-  avatar: { width: 100, height: 100, borderRadius: 50 },
-  nome: { fontSize: 22, fontWeight: "800", color: "#1A1A1A" },
-  email: { color: "#777", fontSize: 14, marginTop: 4 },
-  
-  botaoAgendar: {
-    flexDirection: "row", 
-    justifyContent: "center", 
+  avatar: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+  },
+  nome: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#221431",
+  },
+  email: {
+    marginTop: 4,
+    color: "#766B88",
+    fontSize: 14,
+  },
+  statsRow: {
+    width: "100%",
+    flexDirection: "row",
+    marginTop: 20,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: "#FAF7FF",
+    borderWidth: 1,
+    borderColor: "#ECE3FF",
+    borderRadius: 18,
+    paddingVertical: 14,
     alignItems: "center",
-    backgroundColor: "#8A2BE2", 
-    paddingVertical: 16, 
-    borderRadius: 20, 
-    marginBottom: 30,
-    shadowColor: "#8A2BE2",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    marginHorizontal: 5,
+  },
+  statNumero: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#5B21B6",
+  },
+  statLabel: {
+    marginTop: 4,
+    fontSize: 12,
+    color: "#7C7194",
+    fontWeight: "600",
+  },
+  botaoAgendar: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#7C3AED",
+    paddingVertical: 17,
+    borderRadius: 20,
+    marginBottom: 24,
+    shadowColor: "#7C3AED",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 18,
     elevation: 5,
   },
-  textoBotao: { color: "#fff", marginLeft: 10, fontWeight: "bold", fontSize: 16 },
-
-  sectionHeader: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'space-between',
-    marginBottom: 15 
+  textoBotao: {
+    color: "#fff",
+    marginLeft: 10,
+    fontWeight: "800",
+    fontSize: 16,
   },
-  titulo: { fontSize: 18, fontWeight: "700", color: "#333" },
-  badge: { 
-    backgroundColor: '#8A2BE2', 
-    paddingHorizontal: 10, 
-    paddingVertical: 4, 
-    borderRadius: 12 
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 14,
   },
-  badgeText: { color: '#fff', fontSize: 12, fontWeight: 'bold' },
-
-  cardVazio: { 
-    backgroundColor: '#fff', 
-    padding: 30, 
-    borderRadius: 25, 
-    alignItems: 'center',
+  titulo: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#2F2340",
+  },
+  badge: {
+    backgroundColor: "#EDE9FE",
+    paddingHorizontal: 11,
+    paddingVertical: 5,
+    borderRadius: 999,
+  },
+  badgeText: {
+    color: "#5B21B6",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  cardVazio: {
+    backgroundColor: "#FFF",
+    padding: 30,
+    borderRadius: 28,
+    alignItems: "center",
     borderWidth: 1,
-    borderColor: '#EEE',
-    borderStyle: 'dashed'
+    borderColor: "#ECE3FF",
+    marginBottom: 24,
   },
-  vazioText: { color: '#999', marginTop: 10, fontSize: 14 },
-
+  emptyIconCircle: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: "#F5F0FF",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 14,
+  },
+  vazioTitulo: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#2F2340",
+  },
+  vazioText: {
+    color: "#84789A",
+    marginTop: 8,
+    textAlign: "center",
+    lineHeight: 22,
+    fontSize: 14,
+  },
   card: {
-    flexDirection: "row", 
-    alignItems: "center", 
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: "#fff",
-    padding: 16, 
-    borderRadius: 20, 
+    padding: 16,
+    borderRadius: 22,
     marginBottom: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: '#8A2BE2',
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    borderWidth: 1,
+    borderColor: "#ECE3FF",
+    shadowColor: "#2E1065",
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 3,
+    shadowRadius: 14,
+    elevation: 2,
   },
-  iconBox: { backgroundColor: "#F3E8FF", padding: 10, borderRadius: 12 },
-  info: { flex: 1, marginLeft: 15 },
-  servico: { fontWeight: "bold", fontSize: 16, color: "#333" },
-  data: { fontSize: 13, color: "#666", marginTop: 3 },
-  btnDelete: { padding: 8 },
-
+  iconBox: {
+    backgroundColor: "#F3E8FF",
+    padding: 11,
+    borderRadius: 14,
+  },
+  info: {
+    flex: 1,
+    marginLeft: 14,
+  },
+  servico: {
+    fontWeight: "800",
+    fontSize: 16,
+    color: "#2F2340",
+  },
+  data: {
+    fontSize: 13,
+    color: "#766B88",
+    marginTop: 4,
+  },
+  btnDelete: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: "#FEF2F2",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  configTitulo: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#2F2340",
+    marginTop: 14,
+    marginBottom: 12,
+  },
   menuContainer: {
-    backgroundColor: '#FFF',
-    borderRadius: 25,
-    paddingHorizontal: 10,
-    marginBottom: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    backgroundColor: "#FFF",
+    borderRadius: 24,
+    paddingHorizontal: 12,
+    marginBottom: 18,
+    shadowColor: "#2E1065",
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.05,
-    shadowRadius: 5,
+    shadowRadius: 14,
     elevation: 2,
   },
   menuItem: {
-    flexDirection: "row", 
-    alignItems: "center", 
-    paddingVertical: 15,
-    paddingHorizontal: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 8,
   },
   menuIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  menuTexto: { flex: 1, marginLeft: 15, color: "#444", fontWeight: "600", fontSize: 15 },
-
-  botaoSair: {
-    flexDirection: "row", 
-    justifyContent: "center", 
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#FEE2E2", 
-    padding: 16, 
-    borderRadius: 20, 
-    marginTop: 10,
-    borderWidth: 1,
-    borderColor: '#FCA5A5'
   },
-  textoSair: { color: "#DC2626", marginLeft: 8, fontWeight: "bold", fontSize: 16 },
+  menuTexto: {
+    flex: 1,
+    marginLeft: 14,
+    color: "#44305F",
+    fontWeight: "700",
+    fontSize: 15,
+  },
+  botaoSair: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#FFF1F2",
+    padding: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#FBCACA",
+  },
+  textoSair: {
+    color: "#DC2626",
+    marginLeft: 8,
+    fontWeight: "800",
+    fontSize: 16,
+  },
+  espacoFinal: {
+    height: 40,
+  },
 });

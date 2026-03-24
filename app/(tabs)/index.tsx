@@ -6,21 +6,18 @@ import {
   Text,
   TouchableOpacity,
   View,
-  Dimensions,
   StatusBar,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-
-const { width } = Dimensions.get("window");
 
 export default function HomeScreen() {
   const router = useRouter();
 
   const servicos = [
     { nome: "Corte & Escova", icone: "cut-outline" },
-    { nome: "Coloração", icone: "color-palette-outline" },
-    { nome: "Hidratação", icone: "water-outline" },
+    { nome: "Coloracao", icone: "color-palette-outline" },
+    { nome: "Hidratacao", icone: "water-outline" },
     { nome: "Progressiva", icone: "sparkles-outline" },
   ];
 
@@ -28,8 +25,6 @@ export default function HomeScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
       <ScrollView showsVerticalScrollIndicator={false}>
-        
-        {/* BANNER COM OVERLAY */}
         <View style={styles.bannerContainer}>
           <Image
             source={require("../../assets/images/capa.png")}
@@ -38,66 +33,61 @@ export default function HomeScreen() {
           />
           <View style={styles.gradientOverlay} />
           <View style={styles.textOverlay}>
-            <Text style={styles.boasVindas}>Bem-vinda ao</Text>
-            <Text style={styles.tituloOverlay}>Studio Marcela</Text>
+            <Text style={styles.tituloOverlay}>StudiosMarcela</Text>
             <Text style={styles.subtituloTexto}>
-              Realce sua beleza com quem entende de cabelo.
+              Agende seu horario e veja os principais servicos do studio.
             </Text>
           </View>
         </View>
 
-        {/* BOTÃO AGENDAR - DESIGN FLUTUANTE */}
         <View style={styles.actionContainer}>
           <TouchableOpacity
-            activeOpacity={0.9}
+            activeOpacity={0.92}
             style={styles.botaoPrincipal}
             onPress={() => router.push("/agendar")}
           >
-            <Ionicons name="calendar" size={20} color="#FFF" style={{ marginRight: 10 }} />
-            <Text style={styles.botaoTexto}>AGENDAR HORÁRIO</Text>
+            <Ionicons name="calendar-outline" size={20} color="#FFF" />
+            <Text style={styles.botaoTexto}>AGENDAR HORARIO</Text>
           </TouchableOpacity>
         </View>
 
-        {/* SEÇÃO DE SERVIÇOS */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Nossos Serviços</Text>
-          <TouchableOpacity>
-            <Text style={styles.verTodos}>Ver tudo</Text>
+          <Text style={styles.sectionTitle}>Destaques do studio</Text>
+          <TouchableOpacity onPress={() => router.push("/servicos")}>
+            <Text style={styles.verTodos}>Ver servicos</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.grid}>
           {servicos.map((item, index) => (
-            <TouchableOpacity key={index} style={styles.card}>
+            <TouchableOpacity key={index} style={styles.card} activeOpacity={0.82}>
               <View style={styles.iconCircle}>
-                <Ionicons name={item.icone as any} size={24} color="#8A2BE2" />
+                <Ionicons name={item.icone as any} size={24} color="#7C3AED" />
               </View>
               <Text style={styles.cardTitulo}>{item.nome}</Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        {/* PROMOÇÃO - CARD ESTILIZADO */}
         <View style={styles.promocaoCard}>
-          <View style={styles.promoContent}>
-            <View>
-              <Text style={styles.promoTag}>OFERTA LIMITADA</Text>
-              <Text style={styles.promoServico}>Escova + Hidratação</Text>
-              <View style={styles.priceRow}>
-                <Text style={styles.promoPreco}>R$ 99,90</Text>
-                <Text style={styles.precoAntigo}>R$ 140</Text>
-              </View>
-            </View>
-            <TouchableOpacity
-              style={styles.botaoPromo}
-              onPress={() => router.push("/agendar")}
-            >
-              <Text style={styles.botaoPromoTexto}>QUERO</Text>
-            </TouchableOpacity>
+          <View style={styles.promoGlow} />
+          <Text style={styles.promoTag}>OFERTA DA SEMANA</Text>
+          <Text style={styles.promoServico}>Escova + Hidratacao</Text>
+          <Text style={styles.promoDescricao}>
+            Cuidado completo com acabamento brilhante para sair pronta do studio.
+          </Text>
+
+          <View style={styles.priceRow}>
+            <Text style={styles.promoPreco}>R$ 99,90</Text>
+            <Text style={styles.precoAntigo}>R$ 140</Text>
           </View>
+
+          <TouchableOpacity style={styles.botaoPromo} onPress={() => router.push("/agendar")}>
+            <Text style={styles.botaoPromoTexto}>QUERO AGENDAR</Text>
+          </TouchableOpacity>
         </View>
 
-        <View style={{ height: 40 }} />
+        <View style={styles.espacoFinal} />
       </ScrollView>
     </View>
   );
@@ -106,11 +96,11 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FBFBFF",
+    backgroundColor: "#F4F0FF",
   },
   bannerContainer: {
     width: "100%",
-    height: 380,
+    height: 390,
     position: "relative",
   },
   banner: {
@@ -119,19 +109,13 @@ const styles = StyleSheet.create({
   },
   gradientOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.35)", // Escurece a imagem para o texto brilhar
+    backgroundColor: "rgba(28, 16, 43, 0.42)",
   },
   textOverlay: {
     position: "absolute",
-    bottom: 60,
-    left: 25,
-    right: 25,
-  },
-  boasVindas: {
-    color: "#EEE",
-    fontSize: 16,
-    textTransform: "uppercase",
-    letterSpacing: 1,
+    bottom: 56,
+    left: 24,
+    right: 24,
   },
   tituloOverlay: {
     fontSize: 38,
@@ -140,52 +124,54 @@ const styles = StyleSheet.create({
     lineHeight: 42,
   },
   subtituloTexto: {
-    fontSize: 16,
-    color: "#DDD",
-    marginTop: 8,
+    fontSize: 15,
+    color: "#F5EFFF",
+    marginTop: 10,
+    lineHeight: 22,
     fontWeight: "500",
   },
   actionContainer: {
     alignItems: "center",
-    marginTop: -30, // Faz o botão "subir" sobre o banner
+    marginTop: -28,
     paddingHorizontal: 20,
   },
   botaoPrincipal: {
-    backgroundColor: "#8A2BE2",
+    backgroundColor: "#7C3AED",
     width: "100%",
     flexDirection: "row",
-    padding: 20,
-    borderRadius: 20,
+    padding: 19,
+    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#8A2BE2",
-    shadowOffset: { width: 0, height: 10 },
+    shadowColor: "#7C3AED",
+    shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.3,
-    shadowRadius: 15,
-    elevation: 10,
+    shadowRadius: 18,
+    elevation: 8,
   },
   botaoTexto: {
     color: "#FFF",
     fontWeight: "800",
     fontSize: 16,
-    letterSpacing: 1,
+    letterSpacing: 0.8,
+    marginLeft: 10,
   },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 25,
-    marginTop: 35,
-    marginBottom: 15,
+    paddingHorizontal: 22,
+    marginTop: 34,
+    marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: "800",
-    color: "#1A1A1A",
+    color: "#221431",
   },
   verTodos: {
-    color: "#8A2BE2",
-    fontWeight: "600",
+    color: "#6D28D9",
+    fontWeight: "700",
   },
   grid: {
     flexDirection: "row",
@@ -201,12 +187,17 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#F0F0F0",
+    borderColor: "#EEE6FF",
+    shadowColor: "#2E1065",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.05,
+    shadowRadius: 14,
+    elevation: 2,
   },
   iconCircle: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     backgroundColor: "#F3E8FF",
     justifyContent: "center",
     alignItems: "center",
@@ -214,58 +205,76 @@ const styles = StyleSheet.create({
   },
   cardTitulo: {
     fontWeight: "700",
-    color: "#444",
+    color: "#44305F",
     fontSize: 14,
+    textAlign: "center",
   },
   promocaoCard: {
-    backgroundColor: "#1A1A1A", // Dark mode para contraste na promoção
+    backgroundColor: "#221431",
     marginHorizontal: 20,
-    marginTop: 20,
-    padding: 25,
+    marginTop: 22,
+    padding: 24,
     borderRadius: 30,
+    overflow: "hidden",
+  },
+  promoGlow: {
+    position: "absolute",
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: "rgba(124, 58, 237, 0.18)",
+    top: -40,
+    right: -30,
   },
   promoTag: {
-    color: "#8A2BE2",
-    fontSize: 10,
+    color: "#C4B5FD",
+    fontSize: 11,
     fontWeight: "900",
-    letterSpacing: 1,
-    marginBottom: 5,
-  },
-  promoContent: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    letterSpacing: 1.2,
+    marginBottom: 8,
   },
   promoServico: {
     color: "#FFF",
-    fontSize: 18,
-    fontWeight: "700",
+    fontSize: 22,
+    fontWeight: "800",
+  },
+  promoDescricao: {
+    marginTop: 10,
+    color: "#D3C9E4",
+    fontSize: 14,
+    lineHeight: 21,
   },
   priceRow: {
     flexDirection: "row",
     alignItems: "baseline",
-    marginTop: 5,
+    marginTop: 16,
+    marginBottom: 18,
   },
   promoPreco: {
     color: "#FFF",
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: "900",
   },
   precoAntigo: {
-    color: "#666",
+    color: "#8F83A4",
     fontSize: 14,
     textDecorationLine: "line-through",
-    marginLeft: 8,
+    marginLeft: 10,
   },
   botaoPromo: {
-    backgroundColor: "#8A2BE2",
-    paddingVertical: 12,
+    backgroundColor: "#7C3AED",
+    paddingVertical: 14,
     paddingHorizontal: 20,
-    borderRadius: 15,
+    borderRadius: 16,
+    alignSelf: "flex-start",
   },
   botaoPromoTexto: {
     color: "#FFF",
-    fontWeight: "900",
-    fontSize: 12,
+    fontWeight: "800",
+    fontSize: 13,
+    letterSpacing: 0.7,
+  },
+  espacoFinal: {
+    height: 40,
   },
 });

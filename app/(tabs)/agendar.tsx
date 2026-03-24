@@ -2,14 +2,13 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
   TouchableOpacity,
-  Alert,
   ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import { useAgendamento } from "../../context/AgendamentosContext";
+import { showAlert } from "../../src/utils/feedback";
 
 type Agendamento = {
   servico: string;
@@ -33,18 +32,18 @@ const SERVICOS: Servico[] = [
 ];
 
 const DATAS = [
-  "2026-04-01","2026-04-02","2026-04-03","2026-04-04",
-  "2026-04-07","2026-04-08","2026-04-09","2026-04-10",
-  "2026-04-11","2026-04-14","2026-04-15","2026-04-16",
-  "2026-04-17","2026-04-18","2026-04-21","2026-04-22",
-  "2026-04-23","2026-04-24","2026-04-25","2026-04-28",
-  "2026-04-29","2026-04-30",
+  "2026-04-01", "2026-04-02", "2026-04-03", "2026-04-04",
+  "2026-04-07", "2026-04-08", "2026-04-09", "2026-04-10",
+  "2026-04-11", "2026-04-14", "2026-04-15", "2026-04-16",
+  "2026-04-17", "2026-04-18", "2026-04-21", "2026-04-22",
+  "2026-04-23", "2026-04-24", "2026-04-25", "2026-04-28",
+  "2026-04-29", "2026-04-30",
 ];
 
 const HORARIOS = [
-  "08:00","09:00","10:00","11:00",
-  "13:00","14:00","15:00","16:00",
-  "17:00","18:00",
+  "08:00", "09:00", "10:00", "11:00",
+  "13:00", "14:00", "15:00", "16:00",
+  "17:00", "18:00",
 ];
 
 export default function Agendar() {
@@ -57,7 +56,7 @@ export default function Agendar() {
   if (!contexto) {
     return (
       <View style={styles.center}>
-        <Text>Erro: Contexto não carregado</Text>
+        <Text>Erro: Contexto nao carregado</Text>
       </View>
     );
   }
@@ -67,15 +66,17 @@ export default function Agendar() {
     agendamentos: Agendamento[];
   };
 
-  const formatarData = (dataISO: string) => {
-    if(!dataISO) return "";
-    const [ano, mes, dia] = dataISO.split("-");
-    return `${dia}/${mes}`;
-  };
+  const resumoAgendamento = [
+    servico || "Escolha um servico",
+    data ? `${data.split("-")[2]}/${data.split("-")[1]}` : "Selecione uma data",
+    hora || "Defina o horario",
+  ];
+
+  const botaoDesabilitado = !servico || !data || !hora;
 
   const confirmar = async () => {
     if (!servico || !data || !hora) {
-      Alert.alert("Quase lá!", "Selecione o serviço, a data e o horário.");
+      showAlert("Quase la!", "Selecione o servico, a data e o horario.");
       return;
     }
 
@@ -86,97 +87,138 @@ export default function Agendar() {
     });
 
     if (sucesso) {
-      Alert.alert("Feito!", "Seu horário foi reservado com sucesso.");
+      showAlert("Feito!", "Seu horario foi reservado com sucesso.");
       setServico(null);
       setData(null);
       setHora(null);
+      return;
     }
+
+    showAlert("Horario indisponivel", "Ja existe um agendamento para essa data e horario.");
   };
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <Text style={styles.titulo}>Agendar Horário</Text>
-      <Text style={styles.info}>Escolha os detalhes do seu atendimento</Text>
+      <View style={styles.hero}>
+        <Text style={styles.titulo}>Agendar Horario</Text>
+        <Text style={styles.info}>
+          Monte seu atendimento em poucos toques e escolha o melhor encaixe.
+        </Text>
 
-      {/* SEÇÃO: SERVIÇOS (Em Grid) */}
-      <Text style={styles.labelSecao}>Qual o serviço?</Text>
-      <View style={styles.gridServicos}>
-        {SERVICOS.map((item) => {
-          const ativo = servico === item.nome;
-          return (
-            <TouchableOpacity
-              key={item.id}
-              style={[styles.cardServico, ativo && styles.cardServicoAtivo]}
-              onPress={() => setServico(item.nome)}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.circuloIcone, ativo && styles.circuloIconeAtivo]}>
-                <Ionicons name={item.icone} size={22} color={ativo ? "#FFF" : "#8A2BE2"} />
-              </View>
-              <Text style={[styles.textoServico, ativo && styles.textoBranco]}>{item.nome}</Text>
-            </TouchableOpacity>
-          );
-        })}
+        <View style={styles.resumoContainer}>
+          {resumoAgendamento.map((item, index) => (
+            <View key={index} style={styles.resumoChip}>
+              <Text style={styles.resumoChipText}>{item}</Text>
+            </View>
+          ))}
+        </View>
       </View>
 
-      {/* SEÇÃO: DATAS (Horizontal) */}
-      <Text style={styles.labelSecao}>Para quando?</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollData}>
-        {DATAS.map((d) => {
-          const ativo = data === d;
-          return (
-            <TouchableOpacity
-              key={d}
-              style={[styles.botaoData, ativo && styles.botaoDataAtivo]}
-              onPress={() => { setData(d); setHora(null); }}
-            >
-              <Text style={[styles.textoDataMenor, ativo && styles.textoBranco]}>Abril</Text>
-              <Text style={[styles.textoDataDia, ativo && styles.textoBranco]}>{d.split("-")[2]}</Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+      <View style={styles.secaoCard}>
+        <Text style={styles.labelSecao}>Qual o servico?</Text>
+        <View style={styles.gridServicos}>
+          {SERVICOS.map((item) => {
+            const ativo = servico === item.nome;
 
-      {/* SEÇÃO: HORÁRIOS */}
-      <Text style={styles.labelSecao}>Em qual horário?</Text>
-      {!data && <Text style={styles.aviso}>Selecione uma data primeiro</Text>}
-      
-      <View style={styles.containerHorarios}>
-        {HORARIOS.map((h) => {
-          const dataFormatada = data ? `${data.split("-")[2]}/${data.split("-")[1]}/${data.split("-")[0]}` : "";
-          const ocupado = agendamentos.some(
-            (a: Agendamento) => a.data === dataFormatada && a.hora === h
-          );
-          const ativo = hora === h;
-
-          return (
-            <TouchableOpacity
-              key={h}
-              disabled={!data || ocupado}
-              style={[
-                styles.itemHorario,
-                ativo && styles.itemHorarioAtivo,
-                ocupado && styles.itemHorarioOcupado,
-              ]}
-              onPress={() => setHora(h)}
-            >
-              <Text style={[
-                styles.textoHorario, 
-                ativo && styles.textoBranco,
-                ocupado && styles.textoOcupado
-              ]}>
-                {h}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+            return (
+              <TouchableOpacity
+                key={item.id}
+                style={[styles.cardServico, ativo && styles.cardServicoAtivo]}
+                onPress={() => setServico(item.nome)}
+                activeOpacity={0.82}
+              >
+                <View style={[styles.circuloIcone, ativo && styles.circuloIconeAtivo]}>
+                  <Ionicons name={item.icone} size={22} color={ativo ? "#FFF" : "#7C3AED"} />
+                </View>
+                <Text style={[styles.textoServico, ativo && styles.textoBranco]}>
+                  {item.nome}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
 
-      <TouchableOpacity style={styles.botaoConfirmar} onPress={confirmar}>
+      <View style={styles.secaoCard}>
+        <Text style={styles.labelSecao}>Para quando?</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.scrollData}
+          contentContainerStyle={styles.scrollDataContent}
+        >
+          {DATAS.map((d) => {
+            const ativo = data === d;
+
+            return (
+              <TouchableOpacity
+                key={d}
+                style={[styles.botaoData, ativo && styles.botaoDataAtivo]}
+                onPress={() => {
+                  setData(d);
+                  setHora(null);
+                }}
+              >
+                <Text style={[styles.textoDataMenor, ativo && styles.textoBranco]}>Abr</Text>
+                <Text style={[styles.textoDataDia, ativo && styles.textoBranco]}>
+                  {d.split("-")[2]}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
+
+      <View style={styles.secaoCard}>
+        <Text style={styles.labelSecao}>Em qual horario?</Text>
+        {!data && <Text style={styles.aviso}>Selecione uma data primeiro</Text>}
+
+        <View style={styles.containerHorarios}>
+          {HORARIOS.map((h) => {
+            const dataFormatada = data
+              ? `${data.split("-")[2]}/${data.split("-")[1]}/${data.split("-")[0]}`
+              : "";
+            const ocupado = agendamentos.some(
+              (a: Agendamento) => a.data === dataFormatada && a.hora === h
+            );
+            const ativo = hora === h;
+
+            return (
+              <TouchableOpacity
+                key={h}
+                disabled={!data || ocupado}
+                style={[
+                  styles.itemHorario,
+                  ativo && styles.itemHorarioAtivo,
+                  ocupado && styles.itemHorarioOcupado,
+                ]}
+                onPress={() => setHora(h)}
+              >
+                <Text
+                  style={[
+                    styles.textoHorario,
+                    ativo && styles.textoBranco,
+                    ocupado && styles.textoOcupado,
+                  ]}
+                >
+                  {h}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+
+      <TouchableOpacity
+        style={[styles.botaoConfirmar, botaoDesabilitado && styles.botaoConfirmarDesabilitado]}
+        onPress={confirmar}
+        activeOpacity={0.9}
+      >
+        <Ionicons name="calendar-outline" size={20} color="#FFF" />
         <Text style={styles.textoBotaoConfirmar}>Confirmar Agendamento</Text>
       </TouchableOpacity>
-      
-      <View style={{ height: 40 }} />
+
+      <View style={styles.espacoFinal} />
     </ScrollView>
   );
 }
@@ -184,7 +226,7 @@ export default function Agendar() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F9FA",
+    backgroundColor: "#F4F0FF",
     paddingHorizontal: 20,
   },
   center: {
@@ -192,25 +234,66 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  hero: {
+    marginTop: 28,
+    marginBottom: 22,
+    padding: 22,
+    borderRadius: 28,
+    backgroundColor: "#FFFFFF",
+    shadowColor: "#7C3AED",
+    shadowOffset: { width: 0, height: 14 },
+    shadowOpacity: 0.09,
+    shadowRadius: 24,
+    elevation: 4,
+  },
   titulo: {
-    fontSize: 28,
+    fontSize: 31,
     fontWeight: "800",
-    color: "#1A1A1A",
-    marginTop: 50,
+    color: "#221431",
   },
   info: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 20,
+    fontSize: 15,
+    color: "#6B6278",
+    lineHeight: 22,
+    marginTop: 8,
+  },
+  resumoContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginTop: 18,
+  },
+  resumoChip: {
+    backgroundColor: "#FAF7FF",
+    borderWidth: 1,
+    borderColor: "#E9DDFD",
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  resumoChipText: {
+    color: "#5B4B75",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  secaoCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 26,
+    padding: 18,
+    marginBottom: 18,
+    shadowColor: "#2E1065",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 18,
+    elevation: 3,
   },
   labelSecao: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#444",
-    marginTop: 25,
+    color: "#2F2340",
     marginBottom: 15,
   },
-  /* Serviços */
   gridServicos: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -218,66 +301,78 @@ const styles = StyleSheet.create({
   },
   cardServico: {
     width: "48%",
-    backgroundColor: "#FFF",
-    padding: 15,
-    borderRadius: 16,
+    backgroundColor: "#FCFAFF",
+    paddingVertical: 18,
+    paddingHorizontal: 14,
+    borderRadius: 20,
     marginBottom: 12,
     alignItems: "center",
-    elevation: 3,
-    shadowColor: "#000",
+    borderWidth: 1,
+    borderColor: "#EEE6FF",
+    shadowColor: "#C4B5FD",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 2,
   },
   cardServicoAtivo: {
-    backgroundColor: "#8A2BE2",
+    backgroundColor: "#7C3AED",
+    borderColor: "#7C3AED",
   },
   circuloIcone: {
-    width: 45,
-    height: 45,
-    borderRadius: 22,
-    backgroundColor: "#F0E6FF",
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#F1E8FF",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 10,
   },
   circuloIconeAtivo: {
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "rgba(255,255,255,0.18)",
   },
   textoServico: {
-    fontWeight: "600",
-    color: "#444",
+    fontWeight: "700",
+    color: "#44305F",
+    textAlign: "center",
   },
-  /* Datas */
   scrollData: {
     flexDirection: "row",
   },
+  scrollDataContent: {
+    paddingRight: 6,
+  },
   botaoData: {
-    width: 65,
-    height: 80,
-    backgroundColor: "#FFF",
-    borderRadius: 15,
+    width: 72,
+    height: 88,
+    backgroundColor: "#FCFAFF",
+    borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
-    elevation: 2,
     borderWidth: 1,
-    borderColor: "#EEE",
+    borderColor: "#E7DBFF",
+    shadowColor: "#DDD6FE",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 2,
   },
   botaoDataAtivo: {
-    backgroundColor: "#8A2BE2",
-    borderColor: "#8A2BE2",
+    backgroundColor: "#7C3AED",
+    borderColor: "#7C3AED",
   },
   textoDataMenor: {
     fontSize: 12,
-    color: "#888",
+    color: "#7C7194",
+    fontWeight: "600",
+    textTransform: "uppercase",
   },
   textoDataDia: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#333",
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#2E2041",
   },
-  /* Horários */
   containerHorarios: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -285,49 +380,65 @@ const styles = StyleSheet.create({
   },
   itemHorario: {
     width: "30%",
-    backgroundColor: "#FFF",
-    paddingVertical: 12,
-    borderRadius: 12,
+    backgroundColor: "#FBFAFE",
+    paddingVertical: 14,
+    borderRadius: 16,
     alignItems: "center",
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: "#E9E1F7",
   },
   itemHorarioAtivo: {
-    backgroundColor: "#8A2BE2",
-    borderColor: "#8A2BE2",
+    backgroundColor: "#7C3AED",
+    borderColor: "#7C3AED",
   },
   itemHorarioOcupado: {
-    backgroundColor: "#E2E8F0",
-    opacity: 0.4,
+    backgroundColor: "#ECE8F3",
+    borderColor: "#DDD6E7",
+    opacity: 0.48,
   },
   textoHorario: {
-    fontWeight: "bold",
-    color: "#444",
+    fontWeight: "800",
+    color: "#45345F",
   },
   textoOcupado: {
     textDecorationLine: "line-through",
   },
-  /* Geral */
   textoBranco: {
     color: "#FFF",
   },
   aviso: {
-    color: "#999",
-    fontStyle: "italic",
-    marginBottom: 10,
+    color: "#8A7EA1",
+    marginBottom: 14,
+    fontWeight: "500",
   },
   botaoConfirmar: {
-    backgroundColor: "#8A2BE2",
+    backgroundColor: "#7C3AED",
     paddingVertical: 18,
-    borderRadius: 16,
+    borderRadius: 20,
     alignItems: "center",
-    marginTop: 30,
-    elevation: 5,
+    justifyContent: "center",
+    flexDirection: "row",
+    marginTop: 8,
+    marginBottom: 8,
+    shadowColor: "#7C3AED",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.28,
+    shadowRadius: 18,
+    elevation: 6,
+  },
+  botaoConfirmarDesabilitado: {
+    backgroundColor: "#A78BFA",
+    shadowOpacity: 0.1,
+    elevation: 1,
   },
   textoBotaoConfirmar: {
     color: "#FFF",
-    fontSize: 18,
-    fontWeight: "bold",
+    fontSize: 17,
+    fontWeight: "800",
+    marginLeft: 10,
+  },
+  espacoFinal: {
+    height: 40,
   },
 });
