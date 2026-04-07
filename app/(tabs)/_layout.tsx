@@ -1,30 +1,7 @@
-import { Tabs, router } from "expo-router";
+import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useState } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function TabLayout() {
-  const [carregandoSessao, setCarregandoSessao] = useState(true);
-
-  useEffect(() => {
-    async function verificarSessao() {
-      const usuario = await AsyncStorage.getItem("usuario");
-
-      if (!usuario) {
-        router.replace("/login");
-        return;
-      }
-
-      setCarregandoSessao(false);
-    }
-
-    verificarSessao();
-  }, []);
-
-  if (carregandoSessao) {
-    return null;
-  }
-
   return (
     <Tabs
       screenOptions={{

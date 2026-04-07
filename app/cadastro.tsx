@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView,
+import {View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView,
   KeyboardAvoidingView, Platform, ActivityIndicator
 } from "react-native";
 

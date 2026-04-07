@@ -1,81 +1,194 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
+  ActivityIndicator,
+  Alert,
   FlatList,
-  TouchableOpacity,
-  SafeAreaView,
-  StatusBar,
   Modal,
   Pressable,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 
-interface Servico {
-  id: string;
+import { serviceService } from "../../src/services/productd_services";
+import { Service } from "../../src/types/Service";
+
+interface FormularioServico {
   nome: string;
   preco: string;
-  icone: string;
   descricao: string;
-  detalhes: string;
 }
 
-const servicos: Servico[] = [
+const SERVICOS_INICIAIS: Service[] = [
   {
-    id: "1",
     nome: "Corte de Cabelo",
     preco: "R$ 50",
-    icone: "cut",
-    descricao: "Corte moderno",
-    detalhes: "Inclui lavagem com produtos premium.",
+    descricao: "Inclui lavagem com produtos premium.",
   },
   {
-    id: "2",
     nome: "Escova",
     preco: "R$ 45",
-    icone: "brush",
-    descricao: "Modelagem e brilho",
-    detalhes:
+    descricao:
       "Lavagem profunda, secagem e modelagem com escova para um efeito liso ou ondulado duradouro.",
   },
   {
-    id: "3",
     nome: "Coloracao",
     preco: "R$ 120",
-    icone: "color-palette",
-    descricao: "Tintura premium",
-    detalhes:
-      "Aplicacao de coloracao profissional mais escova para um resultado duradouro.",
+    descricao: "Aplicacao de coloracao profissional mais escova para um resultado duradouro.",
   },
   {
-    id: "4",
     nome: "Hidratacao",
     preco: "R$ 60",
-    icone: "water",
-    descricao: "Reposicao de massa",
-    detalhes:
+    descricao:
       "Tratamento intensivo para cabelos ressecados, devolvendo maciez e brilho.",
   },
   {
-    id: "5",
     nome: "Progressiva",
     preco: "R$ 180",
-    icone: "sparkles",
-    descricao: "Reducao de volume",
-    detalhes:
+    descricao:
       "Alinhamento capilar termico com produtos de alta tecnologia para um liso natural.",
   },
 ];
 
 export default function ServicosScreen() {
-  const [modalVisible, setModalVisible] = useState(false);
-  const [servicoSelecionado, setServicoSelecionado] = useState<Servico | null>(null);
+  const [modalDetalhesVisible, setModalDetalhesVisible] = useState(false);
+  const [modalFormularioVisible, setModalFormularioVisible] = useState(false);
+  const [servicoSelecionado, setServicoSelecionado] = useState<Service | null>(null);
+  const [servicos, setServicos] = useState<Service[]>([]);
+  const [carregando, setCarregando] = useState(true);
+  const [salvando, setSalvando] = useState(false);
+  const [formulario, setFormulario] = useState<FormularioServico>({
+    nome: "",
+    preco: "",
+    descricao: "",
+  });
 
-  const abrirDetalhes = (servico: Servico) => {
+  const editando = useMemo(() => Boolean(servicoSelecionado?.id), [servicoSelecionado]);
+
+  useEffect(() => {
+    carregarServicos();
+  }, []);
+
+  const carregarServicos = async () => {
+    try {
+      setCarregando(true);
+      let lista = await serviceService.listar();
+
+      if (lista.length === 0) {
+        await Promise.all(SERVICOS_INICIAIS.map((servico) => serviceService.inserir(servico)));
+        lista = await serviceService.listar();
+      }
+
+      setServicos(lista);
+    } catch (error) {
+      console.log("Erro ao carregar servicos:", error);
+      Alert.alert("Erro", "Nao foi possivel carregar os servicos.");
+    } finally {
+      setCarregando(false);
+    }
+  };
+
+  const abrirDetalhes = (servico: Service) => {
     setServicoSelecionado(servico);
-    setModalVisible(true);
+    setModalDetalhesVisible(true);
+  };
+
+  const abrirCadastro = () => {
+    setServicoSelecionado(null);
+    setFormulario({
+      nome: "",
+      preco: "",
+      descricao: "",
+    });
+    setModalFormularioVisible(true);
+  };
+
+  const abrirEdicao = (servico: Service) => {
+    setServicoSelecionado(servico);
+    setFormulario({
+      nome: servico.nome,
+      preco: servico.preco,
+      descricao: servico.descricao,
+    });
+    setModalDetalhesVisible(false);
+    setModalFormularioVisible(true);
+  };
+
+  const atualizarCampo = (campo: keyof FormularioServico, valor: string) => {
+    setFormulario((estadoAtual) => ({
+      ...estadoAtual,
+      [campo]: valor,
+    }));
+  };
+
+  const salvarServico = async () => {
+    const nome = formulario.nome.trim();
+    const preco = formulario.preco.trim();
+    const descricao = formulario.descricao.trim();
+
+    if (!nome || !preco || !descricao) {
+      Alert.alert("Campos obrigatorios", "Preencha nome, preco e descricao.");
+      return;
+    }
+
+    try {
+      setSalvando(true);
+
+      if (servicoSelecionado?.id) {
+        await serviceService.alterar(servicoSelecionado.id, {
+          nome,
+          preco,
+          descricao,
+        });
+      } else {
+        await serviceService.inserir({
+          nome,
+          preco,
+          descricao,
+        });
+      }
+
+      setModalFormularioVisible(false);
+      setServicoSelecionado(null);
+      await carregarServicos();
+    } catch (error) {
+      console.log("Erro ao salvar servico:", error);
+      Alert.alert("Erro", "Nao foi possivel salvar o servico.");
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  const excluirServico = async () => {
+    if (!servicoSelecionado?.id) return;
+
+    Alert.alert("Excluir servico", ` "${servicoSelecionado.nome}"?`, [
+      {
+        text: "Cancelar",
+        style: "cancel",
+      },
+      {
+        text: "Excluir",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await serviceService.excluir(servicoSelecionado.id!);
+            setModalDetalhesVisible(false);
+            setServicoSelecionado(null);
+            await carregarServicos();
+          } catch (error) {
+            console.log("Erro ao excluir servico:", error);
+            Alert.alert("Erro", "Nao foi possivel excluir o servico.");
+          }
+        },
+      },
+    ]);
   };
 
   return (
@@ -86,75 +199,167 @@ export default function ServicosScreen() {
         <View style={styles.hero}>
           <Text style={styles.titulo}>Nossos Servicos</Text>
           <Text style={styles.subtitulo}>
-            Escolha o cuidado ideal para o seu momento e toque para ver os detalhes.
+            Cadastre, edite e acompanhe os servicos oferecidos pelo studio.
           </Text>
         </View>
 
-        <FlatList
-          data={servicos}
-          keyExtractor={(item) => item.id}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.listaContent}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              activeOpacity={0.82}
-              style={styles.card}
-              onPress={() => abrirDetalhes(item)}
-            >
-              <View style={styles.cardTop}>
-                <View style={styles.row}>
-                  <View style={styles.iconContainer}>
-                    <Ionicons name={item.icone as any} size={24} color="#7C3AED" />
-                  </View>
-                  <View style={styles.info}>
-                    <Text style={styles.nome}>{item.nome}</Text>
-                    <Text style={styles.descricaoCurta}>{item.descricao}</Text>
-                  </View>
-                </View>
-                <View style={styles.precoBadge}>
-                  <Text style={styles.precoText}>{item.preco}</Text>
-                </View>
-              </View>
+        <TouchableOpacity style={styles.addButton} activeOpacity={0.9} onPress={abrirCadastro}>
+          <Ionicons name="add-circle-outline" size={20} color="#FFF" />
+          <Text style={styles.addButtonText}>Adicionar Servico</Text>
+        </TouchableOpacity>
 
-              <View style={styles.cardBottom}>
-                <Text style={styles.cardHint}>Ver mais detalhes </Text>
-                <Ionicons name="arrow-forward" size={18} color="#8B7AA8" />
-              </View>
-            </TouchableOpacity>
-          )}
-        />
+        {carregando ? (
+          <View style={styles.stateContainer}>
+            <ActivityIndicator size="large" color="#7C3AED" />
+            <Text style={styles.stateText}>Carregando servicos...</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={servicos}
+            keyExtractor={(item) => item.id ?? item.nome}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.listaContent}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                activeOpacity={0.82}
+                style={styles.card}
+                onPress={() => abrirDetalhes(item)}
+              >
+                <View style={styles.cardTop}>
+                  <View style={styles.row}>
+                    <View style={styles.iconContainer}>
+                      <Ionicons name="cut" size={24} color="#7C3AED" />
+                    </View>
+                    <View style={styles.info}>
+                      <Text style={styles.nome}>{item.nome}</Text>
+                      <Text style={styles.descricaoCurta} numberOfLines={2}>
+                        {item.descricao}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.precoBadge}>
+                    <Text style={styles.precoText}>{item.preco}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.cardBottom}>
+                  <Text style={styles.cardHint}>Ver detalhes e editar</Text>
+                  <Ionicons name="create-outline" size={18} color="#8B7AA8" />
+                </View>
+              </TouchableOpacity>
+            )}
+          />
+        )}
       </View>
 
       <Modal
         animationType="slide"
         transparent
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
+        visible={modalDetalhesVisible}
+        onRequestClose={() => setModalDetalhesVisible(false)}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <View style={styles.modalIconCircle}>
-                <Ionicons name={servicoSelecionado?.icone as any} size={38} color="#7C3AED" />
+                <Ionicons name="cut" size={38} color="#7C3AED" />
               </View>
-              <Pressable onPress={() => setModalVisible(false)} style={styles.closeButton}>
+              <Pressable
+                onPress={() => setModalDetalhesVisible(false)}
+                style={styles.closeButton}
+              >
                 <Ionicons name="close" size={22} color="#47345F" />
               </Pressable>
             </View>
 
             <Text style={styles.modalTitle}>{servicoSelecionado?.nome}</Text>
             <Text style={styles.modalPrice}>{servicoSelecionado?.preco}</Text>
-            <Text style={styles.modalDescription}>{servicoSelecionado?.detalhes}</Text>
+            <Text style={styles.modalDescription}>{servicoSelecionado?.descricao}</Text>
+
+            <TouchableOpacity
+              style={styles.buttonEditar}
+              onPress={() => servicoSelecionado && abrirEdicao(servicoSelecionado)}
+            >
+              <Ionicons name="create-outline" size={18} color="#7C3AED" />
+              <Text style={styles.buttonEditarText}>Editar Servico</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.buttonExcluir} onPress={excluirServico}>
+              <Ionicons name="trash-outline" size={18} color="#DC2626" />
+              <Text style={styles.buttonExcluirText}>Excluir Servico</Text>
+            </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.buttonAgendar}
               onPress={() => {
-                setModalVisible(false);
+                setModalDetalhesVisible(false);
                 router.push("/agendar");
               }}
             >
               <Ionicons name="calendar-outline" size={18} color="#FFF" />
               <Text style={styles.buttonText}>Agendar Agora</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        animationType="slide"
+        transparent
+        visible={modalFormularioVisible}
+        onRequestClose={() => setModalFormularioVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.formModalContent}>
+            <View style={styles.formHeader}>
+              <Text style={styles.formTitle}>
+                {editando ? "Editar Servico" : "Novo Servico"}
+              </Text>
+              <Pressable
+                onPress={() => setModalFormularioVisible(false)}
+                style={styles.formCloseButton}
+              >
+                <Ionicons name="close" size={22} color="#47345F" />
+              </Pressable>
+            </View>
+
+            <Text style={styles.label}>Nome</Text>
+            <TextInput
+              value={formulario.nome}
+              onChangeText={(valor) => atualizarCampo("nome", valor)}
+              placeholder="Ex.: Corte feminino"
+              placeholderTextColor="#9A90AB"
+              style={styles.input}
+            />
+
+            <Text style={styles.label}>Preco</Text>
+            <TextInput
+              value={formulario.preco}
+              onChangeText={(valor) => atualizarCampo("preco", valor)}
+              placeholder="Ex.: R$ 80,00"
+              placeholderTextColor="#9A90AB"
+              style={styles.input}
+            />
+
+            <Text style={styles.label}>Descricao</Text>
+            <TextInput
+              value={formulario.descricao}
+              onChangeText={(valor) => atualizarCampo("descricao", valor)}
+              placeholder="Descreva o servico"
+              placeholderTextColor="#9A90AB"
+              multiline
+              textAlignVertical="top"
+              style={[styles.input, styles.inputDescricao]}
+            />
+
+            <TouchableOpacity
+              style={[styles.buttonSalvar, salvando && styles.buttonDisabled]}
+              onPress={salvarServico}
+              disabled={salvando}
+            >
+              <Text style={styles.buttonText}>
+                {salvando ? "Salvando..." : editando ? "Salvar Alteracoes" : "Cadastrar Servico"}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -195,8 +400,39 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     color: "#6B6278",
   },
+  addButton: {
+    backgroundColor: "#7C3AED",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 16,
+    borderRadius: 20,
+    marginBottom: 18,
+    shadowColor: "#7C3AED",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 18,
+    elevation: 5,
+  },
+  addButtonText: {
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "800",
+    marginLeft: 10,
+  },
   listaContent: {
     paddingBottom: 40,
+  },
+  stateContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingBottom: 80,
+  },
+  stateText: {
+    marginTop: 12,
+    fontSize: 15,
+    color: "#6B6278",
   },
   card: {
     backgroundColor: "#FFFFFF",
@@ -332,6 +568,42 @@ const styles = StyleSheet.create({
     color: "#6F6482",
     textAlign: "center",
   },
+  buttonEditar: {
+    width: "100%",
+    marginBottom: 12,
+    backgroundColor: "#F8F2FF",
+    paddingVertical: 16,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    borderWidth: 1,
+    borderColor: "#E8D8FF",
+  },
+  buttonEditarText: {
+    color: "#7C3AED",
+    fontSize: 16,
+    fontWeight: "800",
+    marginLeft: 10,
+  },
+  buttonExcluir: {
+    width: "100%",
+    marginBottom: 12,
+    backgroundColor: "#FFF1F2",
+    paddingVertical: 16,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    borderWidth: 1,
+    borderColor: "#FBCACA",
+  },
+  buttonExcluirText: {
+    color: "#DC2626",
+    fontSize: 16,
+    fontWeight: "800",
+    marginLeft: 10,
+  },
   buttonAgendar: {
     width: "100%",
     backgroundColor: "#7C3AED",
@@ -340,6 +612,64 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
+  },
+  formModalContent: {
+    backgroundColor: "#FFF",
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 34,
+  },
+  formHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 18,
+  },
+  formTitle: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#2F2340",
+  },
+  formCloseButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "#F7F2FF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#44305F",
+    marginBottom: 8,
+    marginTop: 10,
+  },
+  input: {
+    backgroundColor: "#F9F6FF",
+    borderWidth: 1,
+    borderColor: "#E9DFFF",
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 15,
+    color: "#2F2340",
+  },
+  inputDescricao: {
+    minHeight: 120,
+  },
+  buttonSalvar: {
+    marginTop: 24,
+    backgroundColor: "#7C3AED",
+    paddingVertical: 17,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  buttonDisabled: {
+    opacity: 0.7,
   },
   buttonText: {
     color: "#FFF",

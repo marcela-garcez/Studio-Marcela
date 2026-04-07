@@ -1,13 +1,7 @@
 import React from "react";
-import {
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  StatusBar,
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View, StatusBar,
 } from "react-native";
+
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 

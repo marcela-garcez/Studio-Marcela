@@ -1,14 +1,11 @@
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useAgendamento } from "../../context/AgendamentosContext";
 import { showAlert } from "../../src/utils/feedback";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFocusEffect, useRouter } from "expo-router";
 
 type Agendamento = {
   servico: string;
@@ -48,10 +45,34 @@ const HORARIOS = [
 
 export default function Agendar() {
   const contexto = useAgendamento();
+  const router = useRouter();
 
   const [servico, setServico] = useState<string | null>(null);
   const [data, setData] = useState<string | null>(null);
   const [hora, setHora] = useState<string | null>(null);
+  const [carregandoAcesso, setCarregandoAcesso] = useState(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      async function verificarAcesso() {
+        const usuario = await AsyncStorage.getItem("usuario");
+
+        if (!usuario) {
+          router.replace("/login");
+          return;
+        }
+
+        setCarregandoAcesso(false);
+      }
+
+      setCarregandoAcesso(true);
+      verificarAcesso();
+    }, [router])
+  );
+
+  if (carregandoAcesso) {
+    return null;
+  }
 
   if (!contexto) {
     return (

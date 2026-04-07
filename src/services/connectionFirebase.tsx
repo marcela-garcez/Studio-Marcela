@@ -1,6 +1,8 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getDatabase } from 'firebase/database';
+import { initializeFirestore } from "firebase/firestore";
+
 
 const firebaseConfig = {
   baseURL: "https://studiomarcela-27818-default-rtdb.firebaseio.com/",
