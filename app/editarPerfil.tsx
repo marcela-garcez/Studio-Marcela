@@ -1,5 +1,4 @@
-import {View,Text,StyleSheet,TextInput,TouchableOpacity,
-} from "react-native";
+import { View, Text, StyleSheet, TextInput, TouchableOpacity } from "react-native";
 import { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
@@ -14,37 +13,39 @@ export default function EditarPerfil() {
     carregarUsuario();
   }, []);
 
-async function carregarUsuario() {
-  const usuarioJson = await AsyncStorage.getItem("usuario");
+  async function carregarUsuario() {
+    const usuarioJson = await AsyncStorage.getItem("usuario");
 
-  if (usuarioJson) {
-    const usuario = JSON.parse(usuarioJson);
-    setNome(usuario.nome || "");
-    setEmail(usuario.email || "");
-    setTelefone(usuario.telefone || "");
+    if (usuarioJson) {
+      const usuario = JSON.parse(usuarioJson);
+      setNome(usuario.nome || "");
+      setEmail(usuario.email || "");
+      setTelefone(usuario.telefone || "");
+    }
   }
-}
 
   async function salvar() {
     if (!nome || !email || !telefone) {
-      showAlert("Erro", "Preencha todos os campos");
+      showAlert("Erro", "Preencha todos os campos.");
       return;
     }
 
-    const novoUsuario = { nome, email, telefone };
+    await AsyncStorage.setItem(
+      "usuario",
+      JSON.stringify({
+        nome,
+        email,
+        telefone,
+      })
+    );
 
-await AsyncStorage.setItem("usuario", JSON.stringify({
-  nome,
-  email,
-  telefone
-}));
-    showAlert("Sucesso", "Perfil atualizado!");
+    showAlert("Sucesso", "Perfil atualizado com sucesso!");
     router.back();
   }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.titulo}>Editar Perfil</Text>
+      <Text style={styles.titulo}>Editar perfil</Text>
 
       <TextInput
         placeholder="Nome"
@@ -54,7 +55,7 @@ await AsyncStorage.setItem("usuario", JSON.stringify({
       />
 
       <TextInput
-        placeholder="Email"
+        placeholder="E-mail"
         value={email}
         onChangeText={setEmail}
         style={styles.input}
@@ -62,7 +63,7 @@ await AsyncStorage.setItem("usuario", JSON.stringify({
       />
 
       <TextInput
-        placeholder="telefone"
+        placeholder="Telefone"
         value={telefone}
         onChangeText={setTelefone}
         style={styles.input}
@@ -70,7 +71,7 @@ await AsyncStorage.setItem("usuario", JSON.stringify({
       />
 
       <TouchableOpacity style={styles.botao} onPress={salvar}>
-        <Text style={styles.botaoTexto}>Salvar Alterações</Text>
+        <Text style={styles.botaoTexto}>Salvar alterações</Text>
       </TouchableOpacity>
     </View>
   );
@@ -82,13 +83,11 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: "#f4f2f8",
   },
-
   titulo: {
     fontSize: 22,
     fontWeight: "bold",
     marginBottom: 20,
   },
-
   input: {
     backgroundColor: "#fff",
     padding: 15,
@@ -96,7 +95,6 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     elevation: 3,
   },
-
   botao: {
     backgroundColor: "#8A2BE2",
     padding: 15,
@@ -104,7 +102,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 10,
   },
-
   botaoTexto: {
     color: "#fff",
     fontWeight: "bold",

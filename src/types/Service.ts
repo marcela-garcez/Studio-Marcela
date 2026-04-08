@@ -3,4 +3,6 @@ export interface Service {
   nome: string;
   preco: string;
   descricao: string;
+  informacao?: string;
+  imageUrl?: string;
 }

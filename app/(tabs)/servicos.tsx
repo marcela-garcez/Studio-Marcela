@@ -1,94 +1,81 @@
+import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
+import { router } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Modal,
   Pressable,
   SafeAreaView,
+  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
 
 import { serviceService } from "../../src/services/productd_services";
 import { Service } from "../../src/types/Service";
+import { showAlert, showConfirm } from "../../src/utils/feedback";
 
-interface FormularioServico {
+type FormularioServico = {
   nome: string;
   preco: string;
   descricao: string;
-}
-
-const SERVICOS_INICIAIS: Service[] = [
-  {
-    nome: "Corte de Cabelo",
-    preco: "R$ 50",
-    descricao: "Inclui lavagem com produtos premium.",
-  },
-  {
-    nome: "Escova",
-    preco: "R$ 45",
-    descricao:
-      "Lavagem profunda, secagem e modelagem com escova para um efeito liso ou ondulado duradouro.",
-  },
-  {
-    nome: "Coloracao",
-    preco: "R$ 120",
-    descricao: "Aplicacao de coloracao profissional mais escova para um resultado duradouro.",
-  },
-  {
-    nome: "Hidratacao",
-    preco: "R$ 60",
-    descricao:
-      "Tratamento intensivo para cabelos ressecados, devolvendo maciez e brilho.",
-  },
-  {
-    nome: "Progressiva",
-    preco: "R$ 180",
-    descricao:
-      "Alinhamento capilar termico com produtos de alta tecnologia para um liso natural.",
-  },
-];
+  informacao: string;
+  imageUrl: string;
+};
 
 export default function ServicosScreen() {
+  const { width } = useWindowDimensions();
+  const isWideScreen = width >= 960;
+  const modalMaxWidth = isWideScreen ? 720 : 560;
+
   const [modalDetalhesVisible, setModalDetalhesVisible] = useState(false);
   const [modalFormularioVisible, setModalFormularioVisible] = useState(false);
   const [servicoSelecionado, setServicoSelecionado] = useState<Service | null>(null);
-  const [servicos, setServicos] = useState<Service[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
+  const [erroImagemPreview, setErroImagemPreview] = useState(false);
   const [formulario, setFormulario] = useState<FormularioServico>({
     nome: "",
     preco: "",
     descricao: "",
+    informacao: "",
+    imageUrl: "",
   });
+  const [servicos, setServicos] = useState<Service[]>([]);
 
   const editando = useMemo(() => Boolean(servicoSelecionado?.id), [servicoSelecionado]);
+  const imagemPreview = formulario.imageUrl.trim() || servicoSelecionado?.imageUrl || "";
 
   useEffect(() => {
     carregarServicos();
   }, []);
 
+  const limparFormulario = () => {
+    setFormulario({
+      nome: "",
+      preco: "",
+      descricao: "",
+      informacao: "",
+      imageUrl: "",
+    });
+    setErroImagemPreview(false);
+  };
+
   const carregarServicos = async () => {
     try {
       setCarregando(true);
-      let lista = await serviceService.listar();
-
-      if (lista.length === 0) {
-        await Promise.all(SERVICOS_INICIAIS.map((servico) => serviceService.inserir(servico)));
-        lista = await serviceService.listar();
-      }
-
+      const lista = await serviceService.listar();
       setServicos(lista);
     } catch (error) {
       console.log("Erro ao carregar servicos:", error);
-      Alert.alert("Erro", "Nao foi possivel carregar os servicos.");
+      showAlert("Erro", "Nao foi possivel carregar os servicos.");
     } finally {
       setCarregando(false);
     }
@@ -101,11 +88,7 @@ export default function ServicosScreen() {
 
   const abrirCadastro = () => {
     setServicoSelecionado(null);
-    setFormulario({
-      nome: "",
-      preco: "",
-      descricao: "",
-    });
+    limparFormulario();
     setModalFormularioVisible(true);
   };
 
@@ -115,89 +98,95 @@ export default function ServicosScreen() {
       nome: servico.nome,
       preco: servico.preco,
       descricao: servico.descricao,
+      informacao: servico.informacao ?? "",
+      imageUrl: servico.imageUrl ?? "",
     });
+    setErroImagemPreview(false);
     setModalDetalhesVisible(false);
     setModalFormularioVisible(true);
   };
 
   const atualizarCampo = (campo: keyof FormularioServico, valor: string) => {
+    if (campo === "imageUrl") {
+      setErroImagemPreview(false);
+    }
+
     setFormulario((estadoAtual) => ({
       ...estadoAtual,
       [campo]: valor,
     }));
   };
 
+  const confirmarExclusaoServico = async (id: string) => {
+    const confirmou = await showConfirm({
+      title: "Confirmar exclusao",
+      message: "Tem certeza que deseja excluir este servico?",
+      confirmText: "Excluir",
+      cancelText: "Cancelar",
+    });
+
+    if (!confirmou) {
+      return;
+    }
+
+    try {
+      await serviceService.excluir(id);
+      setModalDetalhesVisible(false);
+      await carregarServicos();
+    } catch (error) {
+      console.log("Erro ao excluir:", error);
+      showAlert("Erro", "Nao foi possivel excluir.");
+    }
+  };
+
   const salvarServico = async () => {
     const nome = formulario.nome.trim();
     const preco = formulario.preco.trim();
     const descricao = formulario.descricao.trim();
+    const informacao = formulario.informacao.trim();
+    const imageUrl = formulario.imageUrl.trim();
 
     if (!nome || !preco || !descricao) {
-      Alert.alert("Campos obrigatorios", "Preencha nome, preco e descricao.");
+      showAlert("Campos obrigatorios", "Preencha nome, preco e descricao.");
       return;
     }
 
     try {
       setSalvando(true);
 
+      const payload: Service = {
+        nome,
+        preco,
+        descricao,
+        informacao,
+        imageUrl,
+      };
+
       if (servicoSelecionado?.id) {
-        await serviceService.alterar(servicoSelecionado.id, {
-          nome,
-          preco,
-          descricao,
-        });
+        await serviceService.alterar(servicoSelecionado.id, payload);
       } else {
-        await serviceService.inserir({
-          nome,
-          preco,
-          descricao,
-        });
+        await serviceService.inserir(payload);
       }
 
       setModalFormularioVisible(false);
       setServicoSelecionado(null);
+      limparFormulario();
       await carregarServicos();
     } catch (error) {
       console.log("Erro ao salvar servico:", error);
-      Alert.alert("Erro", "Nao foi possivel salvar o servico.");
+      showAlert("Erro", "Nao foi possivel salvar o servico.");
     } finally {
       setSalvando(false);
     }
-  };
-
-  const excluirServico = async () => {
-    if (!servicoSelecionado?.id) return;
-
-    Alert.alert("Excluir servico", ` "${servicoSelecionado.nome}"?`, [
-      {
-        text: "Cancelar",
-        style: "cancel",
-      },
-      {
-        text: "Excluir",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await serviceService.excluir(servicoSelecionado.id!);
-            setModalDetalhesVisible(false);
-            setServicoSelecionado(null);
-            await carregarServicos();
-          } catch (error) {
-            console.log("Erro ao excluir servico:", error);
-            Alert.alert("Erro", "Nao foi possivel excluir o servico.");
-          }
-        },
-      },
-    ]);
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" />
 
-      <View style={styles.container}>
+      <View style={[styles.container, isWideScreen && styles.containerWide]}>
         <View style={styles.hero}>
-          <Text style={styles.titulo}>Nossos Servicos</Text>
+          <Text style={styles.titulo}>Nossos Serviços</Text>
           <Text style={styles.subtitulo}>
             Cadastre, edite e acompanhe os servicos oferecidos pelo studio.
           </Text>
@@ -216,19 +205,39 @@ export default function ServicosScreen() {
         ) : (
           <FlatList
             data={servicos}
+            key={isWideScreen ? "grid" : "list"}
             keyExtractor={(item) => item.id ?? item.nome}
+            numColumns={isWideScreen ? 2 : 1}
+            columnWrapperStyle={isWideScreen ? styles.columnWrapper : undefined}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.listaContent}
+            ListEmptyComponent={
+              <View style={styles.emptyCard}>
+                <Ionicons name="briefcase-outline" size={36} color="#A78BFA" />
+                <Text style={styles.emptyTitle}>Nenhum servico cadastrado</Text>
+                <Text style={styles.emptyText}>
+                  Toque em adicionar para criar o primeiro servico.
+                </Text>
+              </View>
+            }
             renderItem={({ item }) => (
               <TouchableOpacity
                 activeOpacity={0.82}
-                style={styles.card}
+                style={[styles.card, isWideScreen && styles.cardWide]}
                 onPress={() => abrirDetalhes(item)}
               >
                 <View style={styles.cardTop}>
                   <View style={styles.row}>
                     <View style={styles.iconContainer}>
-                      <Ionicons name="cut" size={24} color="#7C3AED" />
+                      {item.imageUrl ? (
+                        <Image
+                          source={{ uri: item.imageUrl }}
+                          style={styles.cardImage}
+                          contentFit="cover"
+                        />
+                      ) : (
+                        <Ionicons name="cut" size={24} color="#7C3AED" />
+                      )}
                     </View>
                     <View style={styles.info}>
                       <Text style={styles.nome}>{item.nome}</Text>
@@ -259,22 +268,29 @@ export default function ServicosScreen() {
         onRequestClose={() => setModalDetalhesVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { maxWidth: modalMaxWidth }]}>
             <View style={styles.modalHeader}>
               <View style={styles.modalIconCircle}>
-                <Ionicons name="cut" size={38} color="#7C3AED" />
+                {servicoSelecionado?.imageUrl ? (
+                  <Image
+                    source={{ uri: servicoSelecionado.imageUrl }}
+                    style={styles.modalImage}
+                    contentFit="cover"
+                  />
+                ) : (
+                  <Ionicons name="cut" size={38} color="#7C3AED" />
+                )}
               </View>
-              <Pressable
-                onPress={() => setModalDetalhesVisible(false)}
-                style={styles.closeButton}
-              >
+              <Pressable onPress={() => setModalDetalhesVisible(false)} style={styles.closeButton}>
                 <Ionicons name="close" size={22} color="#47345F" />
               </Pressable>
             </View>
 
             <Text style={styles.modalTitle}>{servicoSelecionado?.nome}</Text>
             <Text style={styles.modalPrice}>{servicoSelecionado?.preco}</Text>
-            <Text style={styles.modalDescription}>{servicoSelecionado?.descricao}</Text>
+            <Text style={styles.modalDescription}>
+              {servicoSelecionado?.informacao || servicoSelecionado?.descricao}
+            </Text>
 
             <TouchableOpacity
               style={styles.buttonEditar}
@@ -284,7 +300,10 @@ export default function ServicosScreen() {
               <Text style={styles.buttonEditarText}>Editar Servico</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.buttonExcluir} onPress={excluirServico}>
+            <TouchableOpacity
+              style={styles.buttonExcluir}
+              onPress={() => servicoSelecionado?.id && confirmarExclusaoServico(servicoSelecionado.id)}
+            >
               <Ionicons name="trash-outline" size={18} color="#DC2626" />
               <Text style={styles.buttonExcluirText}>Excluir Servico</Text>
             </TouchableOpacity>
@@ -310,58 +329,103 @@ export default function ServicosScreen() {
         onRequestClose={() => setModalFormularioVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.formModalContent}>
-            <View style={styles.formHeader}>
-              <Text style={styles.formTitle}>
-                {editando ? "Editar Servico" : "Novo Servico"}
-              </Text>
-              <Pressable
-                onPress={() => setModalFormularioVisible(false)}
-                style={styles.formCloseButton}
+          <ScrollView contentContainerStyle={styles.modalScrollContent}>
+            <View style={[styles.formModalContent, { maxWidth: modalMaxWidth }]}>
+              <View style={styles.formHeader}>
+                <Text style={styles.formTitle}>{editando ? "Editar Servico" : "Novo Servico"}</Text>
+                <Pressable onPress={() => setModalFormularioVisible(false)} style={styles.formCloseButton}>
+                  <Ionicons name="close" size={22} color="#47345F" />
+                </Pressable>
+              </View>
+
+              <Text style={styles.label}>URL da imagem</Text>
+              <TextInput
+                value={formulario.imageUrl}
+                onChangeText={(valor) => atualizarCampo("imageUrl", valor)}
+                placeholder="https://exemplo.com/minha-foto.jpg"
+                placeholderTextColor="#9A90AB"
+                autoCapitalize="none"
+                autoCorrect={false}
+                style={styles.input}
+              />
+
+              {imagemPreview ? (
+                <Image
+                  source={{ uri: imagemPreview }}
+                  style={styles.formImagePreview}
+                  contentFit="cover"
+                  onError={() => setErroImagemPreview(true)}
+                />
+              ) : (
+                <View style={styles.formImagePlaceholder}>
+                  <Ionicons name="image-outline" size={28} color="#A78BFA" />
+                  <Text style={styles.formImagePlaceholderText}>Cole uma URL para visualizar a imagem</Text>
+                </View>
+              )}
+
+              {imagemPreview && erroImagemPreview ? (
+                <Text style={styles.imageErrorText}>
+                  A imagem nao carregou. Use uma URL direta da foto, como `.jpg`, `.png` ou `.webp`.
+                </Text>
+              ) : null}
+
+              <View style={[styles.formGrid, isWideScreen && styles.formGridWide]}>
+                <View style={styles.formField}>
+                  <Text style={styles.label}>Nome</Text>
+                  <TextInput
+                    value={formulario.nome}
+                    onChangeText={(valor) => atualizarCampo("nome", valor)}
+                    placeholder="Ex.: Corte feminino"
+                    placeholderTextColor="#9A90AB"
+                    style={styles.input}
+                  />
+                </View>
+
+                <View style={styles.formField}>
+                  <Text style={styles.label}>Preco</Text>
+                  <TextInput
+                    value={formulario.preco}
+                    onChangeText={(valor) => atualizarCampo("preco", valor)}
+                    placeholder="Ex.: R$ 80,00"
+                    placeholderTextColor="#9A90AB"
+                    style={styles.input}
+                  />
+                </View>
+              </View>
+
+              <Text style={styles.label}>Descricao</Text>
+              <TextInput
+                value={formulario.descricao}
+                onChangeText={(valor) => atualizarCampo("descricao", valor)}
+                placeholder="Descreva o servico"
+                placeholderTextColor="#9A90AB"
+                multiline
+                textAlignVertical="top"
+                style={[styles.input, styles.inputDescricao]}
+              />
+
+              <Text style={styles.label}>Informacoes adicionais</Text>
+              <TextInput
+                value={formulario.informacao}
+                onChangeText={(valor) => atualizarCampo("informacao", valor)}
+                placeholder="Detalhes extras do atendimento"
+                placeholderTextColor="#9A90AB"
+                multiline
+                textAlignVertical="top"
+                style={[styles.input, styles.inputDescricaoCurta]}
+              />
+
+              <TouchableOpacity
+                style={[styles.buttonSalvar, salvando && styles.buttonDisabled]}
+                onPress={salvarServico}
+                disabled={salvando}
               >
-                <Ionicons name="close" size={22} color="#47345F" />
-              </Pressable>
+                <Text style={styles.buttonText}>
+                  {salvando ? "Salvando..." : editando ? "Salvar Alteracoes" : "Cadastrar Servico"}
+                </Text>
+              </TouchableOpacity>
             </View>
-
-            <Text style={styles.label}>Nome</Text>
-            <TextInput
-              value={formulario.nome}
-              onChangeText={(valor) => atualizarCampo("nome", valor)}
-              placeholder="Ex.: Corte feminino"
-              placeholderTextColor="#9A90AB"
-              style={styles.input}
-            />
-
-            <Text style={styles.label}>Preco</Text>
-            <TextInput
-              value={formulario.preco}
-              onChangeText={(valor) => atualizarCampo("preco", valor)}
-              placeholder="Ex.: R$ 80,00"
-              placeholderTextColor="#9A90AB"
-              style={styles.input}
-            />
-
-            <Text style={styles.label}>Descricao</Text>
-            <TextInput
-              value={formulario.descricao}
-              onChangeText={(valor) => atualizarCampo("descricao", valor)}
-              placeholder="Descreva o servico"
-              placeholderTextColor="#9A90AB"
-              multiline
-              textAlignVertical="top"
-              style={[styles.input, styles.inputDescricao]}
-            />
-
-            <TouchableOpacity
-              style={[styles.buttonSalvar, salvando && styles.buttonDisabled]}
-              onPress={salvarServico}
-              disabled={salvando}
-            >
-              <Text style={styles.buttonText}>
-                {salvando ? "Salvando..." : editando ? "Salvar Alteracoes" : "Cadastrar Servico"}
-              </Text>
-            </TouchableOpacity>
-          </View>
+          </ScrollView>
         </View>
       </Modal>
     </SafeAreaView>
@@ -376,6 +440,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 20,
+  },
+  containerWide: {
+    width: "100%",
+    maxWidth: 1180,
+    alignSelf: "center",
   },
   hero: {
     marginTop: 18,
@@ -423,6 +492,9 @@ const styles = StyleSheet.create({
   listaContent: {
     paddingBottom: 40,
   },
+  columnWrapper: {
+    gap: 14,
+  },
   stateContainer: {
     flex: 1,
     alignItems: "center",
@@ -434,6 +506,27 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#6B6278",
   },
+  emptyCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    padding: 28,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#ECE3FF",
+  },
+  emptyTitle: {
+    marginTop: 12,
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#2F2340",
+  },
+  emptyText: {
+    marginTop: 8,
+    fontSize: 14,
+    lineHeight: 22,
+    color: "#7B718E",
+    textAlign: "center",
+  },
   card: {
     backgroundColor: "#FFFFFF",
     padding: 18,
@@ -444,6 +537,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 16,
     elevation: 3,
+  },
+  cardWide: {
+    flex: 1,
+    marginBottom: 14,
   },
   cardTop: {
     flexDirection: "row",
@@ -462,6 +559,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#F3E8FF",
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
+  },
+  cardImage: {
+    width: "100%",
+    height: "100%",
   },
   info: {
     flex: 1,
@@ -509,8 +611,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "rgba(33, 20, 49, 0.45)",
     justifyContent: "flex-end",
+    paddingHorizontal: 16,
   },
   modalContent: {
+    width: "100%",
+    alignSelf: "center",
     backgroundColor: "#FFF",
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
@@ -518,6 +623,11 @@ const styles = StyleSheet.create({
     paddingTop: 24,
     paddingBottom: 34,
     alignItems: "center",
+  },
+  modalScrollContent: {
+    flexGrow: 1,
+    justifyContent: "flex-end",
+    paddingVertical: 24,
   },
   modalHeader: {
     width: "100%",
@@ -535,6 +645,11 @@ const styles = StyleSheet.create({
     marginTop: -62,
     borderWidth: 6,
     borderColor: "#FFF",
+    overflow: "hidden",
+  },
+  modalImage: {
+    width: "100%",
+    height: "100%",
   },
   closeButton: {
     position: "absolute",
@@ -596,7 +711,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     flexDirection: "row",
     borderWidth: 1,
-    borderColor: "#FBCACA",
+    borderColor: "#FECDD3",
   },
   buttonExcluirText: {
     color: "#DC2626",
@@ -614,9 +729,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
   },
   formModalContent: {
+    width: "100%",
+    alignSelf: "center",
     backgroundColor: "#FFF",
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
+    borderRadius: 32,
     paddingHorizontal: 24,
     paddingTop: 24,
     paddingBottom: 34,
@@ -640,6 +756,47 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  formGrid: {
+    gap: 0,
+  },
+  formGridWide: {
+    flexDirection: "row",
+    gap: 14,
+  },
+  formField: {
+    flex: 1,
+  },
+  formImagePreview: {
+    width: "100%",
+    height: 220,
+    borderRadius: 18,
+    marginTop: 14,
+    backgroundColor: "#F3E8FF",
+  },
+  formImagePlaceholder: {
+    marginTop: 14,
+    height: 220,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: "#D8B4FE",
+    backgroundColor: "#FAF7FF",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 20,
+  },
+  formImagePlaceholderText: {
+    marginTop: 10,
+    fontSize: 14,
+    color: "#8B7AA8",
+    textAlign: "center",
+  },
+  imageErrorText: {
+    marginTop: 10,
+    fontSize: 13,
+    color: "#B91C1C",
+    lineHeight: 18,
+  },
   label: {
     fontSize: 14,
     fontWeight: "700",
@@ -659,6 +816,9 @@ const styles = StyleSheet.create({
   },
   inputDescricao: {
     minHeight: 120,
+  },
+  inputDescricaoCurta: {
+    minHeight: 90,
   },
   buttonSalvar: {
     marginTop: 24,

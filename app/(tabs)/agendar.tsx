@@ -1,5 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView,
-} from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useState } from "react";
 import { useAgendamento } from "../../context/AgendamentosContext";
@@ -23,9 +22,9 @@ const SERVICOS: Servico[] = [
   { id: "1", nome: "Corte", icone: "cut" },
   { id: "2", nome: "Escova", icone: "brush" },
   { id: "3", nome: "Pintura", icone: "color-palette" },
-  { id: "4", nome: "Hidrata", icone: "water" },
+  { id: "4", nome: "Hidratação", icone: "water" },
   { id: "5", nome: "Progressiva", icone: "sparkles" },
-  { id: "6", nome: "Manicure / Pedicure", icone: "footsteps-outline" },
+  { id: "6", nome: "Teste de mechas", icone: "flash" },
 ];
 
 const DATAS = [
@@ -77,7 +76,7 @@ export default function Agendar() {
   if (!contexto) {
     return (
       <View style={styles.center}>
-        <Text>Erro: Contexto nao carregado</Text>
+        <Text>Erro: contexto não carregado.</Text>
       </View>
     );
   }
@@ -88,16 +87,16 @@ export default function Agendar() {
   };
 
   const resumoAgendamento = [
-    servico || "Escolha um servico",
+    servico || "Escolha um serviço",
     data ? `${data.split("-")[2]}/${data.split("-")[1]}` : "Selecione uma data",
-    hora || "Defina o horario",
+    hora || "Defina o horário",
   ];
 
   const botaoDesabilitado = !servico || !data || !hora;
 
   const confirmar = async () => {
     if (!servico || !data || !hora) {
-      showAlert("Quase la!", "Selecione o servico, a data e o horario.");
+      showAlert("Quase lá!", "Selecione o serviço, a data e o horário.");
       return;
     }
 
@@ -108,20 +107,20 @@ export default function Agendar() {
     });
 
     if (sucesso) {
-      showAlert("Feito!", "Seu horario foi reservado com sucesso.");
+      showAlert("Feito!", "Seu horário foi reservado com sucesso.");
       setServico(null);
       setData(null);
       setHora(null);
       return;
     }
 
-    showAlert("Horario indisponivel", "Ja existe um agendamento para essa data e horario.");
+    showAlert("Horário indisponível", "Já existe um agendamento para essa data e horário.");
   };
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.hero}>
-        <Text style={styles.titulo}>Agendar Horario</Text>
+        <Text style={styles.titulo}>Agendar Horário</Text>
         <Text style={styles.info}>
           Monte seu atendimento em poucos toques e escolha o melhor encaixe.
         </Text>
@@ -136,7 +135,7 @@ export default function Agendar() {
       </View>
 
       <View style={styles.secaoCard}>
-        <Text style={styles.labelSecao}>Qual o servico?</Text>
+        <Text style={styles.labelSecao}>Qual é o serviço?</Text>
         <View style={styles.gridServicos}>
           {SERVICOS.map((item) => {
             const ativo = servico === item.nome;
@@ -191,7 +190,7 @@ export default function Agendar() {
       </View>
 
       <View style={styles.secaoCard}>
-        <Text style={styles.labelSecao}>Em qual horario?</Text>
+        <Text style={styles.labelSecao}>Em qual horário?</Text>
         {!data && <Text style={styles.aviso}>Selecione uma data primeiro</Text>}
 
         <View style={styles.containerHorarios}>
@@ -236,7 +235,7 @@ export default function Agendar() {
         activeOpacity={0.9}
       >
         <Ionicons name="calendar-outline" size={20} color="#FFF" />
-        <Text style={styles.textoBotaoConfirmar}>Confirmar Agendamento</Text>
+        <Text style={styles.textoBotaoConfirmar}>Confirmar agendamento</Text>
       </TouchableOpacity>
 
       <View style={styles.espacoFinal} />

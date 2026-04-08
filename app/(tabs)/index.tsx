@@ -1,5 +1,12 @@
 import React from "react";
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View, StatusBar,
+import {
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  StatusBar,
 } from "react-native";
 
 import { useRouter } from "expo-router";
@@ -10,8 +17,8 @@ export default function HomeScreen() {
 
   const servicos = [
     { nome: "Corte & Escova", icone: "cut-outline" },
-    { nome: "Coloracao", icone: "color-palette-outline" },
-    { nome: "Hidratacao", icone: "water-outline" },
+    { nome: "Coloração", icone: "color-palette-outline" },
+    { nome: "Hidratação", icone: "water-outline" },
     { nome: "Progressiva", icone: "sparkles-outline" },
   ];
 
@@ -29,7 +36,7 @@ export default function HomeScreen() {
           <View style={styles.textOverlay}>
             <Text style={styles.tituloOverlay}>StudiosMarcela</Text>
             <Text style={styles.subtituloTexto}>
-              Agende seu horario e veja os principais servicos do studio.
+              Agende seu horário e veja os principais serviços do studio.
             </Text>
           </View>
         </View>
@@ -41,14 +48,14 @@ export default function HomeScreen() {
             onPress={() => router.push("/agendar")}
           >
             <Ionicons name="calendar-outline" size={20} color="#FFF" />
-            <Text style={styles.botaoTexto}>AGENDAR HORARIO</Text>
+            <Text style={styles.botaoTexto}>AGENDAR HORÁRIO</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Destaques do studio</Text>
           <TouchableOpacity onPress={() => router.push("/servicos")}>
-            <Text style={styles.verTodos}>Ver servicos</Text>
+            <Text style={styles.verTodos}>Ver serviços</Text>
           </TouchableOpacity>
         </View>
 
@@ -66,7 +73,7 @@ export default function HomeScreen() {
         <View style={styles.promocaoCard}>
           <View style={styles.promoGlow} />
           <Text style={styles.promoTag}>OFERTA DA SEMANA</Text>
-          <Text style={styles.promoServico}>Escova + Hidratacao</Text>
+          <Text style={styles.promoServico}>Escova e Hidratação</Text>
           <Text style={styles.promoDescricao}>
             Cuidado completo com acabamento brilhante para sair pronta do studio.
           </Text>

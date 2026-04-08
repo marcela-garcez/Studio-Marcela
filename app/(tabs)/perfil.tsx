@@ -1,5 +1,12 @@
 import React, { useCallback, useState } from "react";
-import {View,Text,StyleSheet,Image,TouchableOpacity,ScrollView,StatusBar,
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  ScrollView,
+  StatusBar,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -31,7 +38,7 @@ export default function Perfil() {
 
   async function confirmarExclusao(index: number) {
     const confirmou = await showConfirm({
-      title: "Cancelar Agendamento",
+      title: "Cancelar agendamento",
       message: "Deseja realmente remover este compromisso?",
       confirmText: "Confirmar",
       cancelText: "Voltar",
@@ -46,7 +53,7 @@ export default function Perfil() {
     try {
       await signOut(auth);
     } catch (error) {
-      console.log("Erro ao encerrar sessao no Firebase:", error);
+      console.log("Erro ao encerrar sessão no Firebase:", error);
     } finally {
       await AsyncStorage.removeItem("usuario");
       setUsuario(null);
@@ -65,7 +72,7 @@ export default function Perfil() {
           <Image source={require("../../assets/images/avatar.png")} style={styles.avatar} />
         </View>
 
-        <Text style={styles.nome}>{usuario.nome || "Usuario"}</Text>
+        <Text style={styles.nome}>{usuario.nome || "Usuário"}</Text>
         <Text style={styles.email}>{usuario.email}</Text>
 
         <View style={styles.statsRow}>
@@ -86,7 +93,7 @@ export default function Perfil() {
         onPress={() => router.push("/agendar")}
       >
         <Ionicons name="add-circle-outline" size={22} color="#fff" />
-        <Text style={styles.textoBotao}>Novo Agendamento</Text>
+        <Text style={styles.textoBotao}>Novo agendamento</Text>
       </TouchableOpacity>
 
       <View style={styles.sectionHeader}>
@@ -103,7 +110,7 @@ export default function Perfil() {
           </View>
           <Text style={styles.vazioTitulo}>Nada marcado por enquanto</Text>
           <Text style={styles.vazioText}>
-            Assim que voce reservar um horario, ele vai aparecer aqui.
+            Assim que você reservar um horário, ele vai aparecer aqui.
           </Text>
         </View>
       ) : (
@@ -125,20 +132,20 @@ export default function Perfil() {
         ))
       )}
 
-      <Text style={styles.configTitulo}>Configuracoes</Text>
+      <Text style={styles.configTitulo}>Configurações</Text>
       <View style={styles.menuContainer}>
         <TouchableOpacity style={styles.menuItem} onPress={() => router.push("/editarPerfil")}>
           <View style={[styles.menuIcon, { backgroundColor: "#EDE9FE" }]}>
             <Ionicons name="person-outline" size={20} color="#5B21B6" />
           </View>
-          <Text style={styles.menuTexto}>Editar Perfil</Text>
+          <Text style={styles.menuTexto}>Editar perfil</Text>
           <Ionicons name="chevron-forward" size={18} color="#A8A0B5" />
         </TouchableOpacity>
       </View>
 
       <TouchableOpacity style={styles.botaoSair} onPress={sair}>
         <Ionicons name="log-out-outline" size={20} color="#DC2626" />
-        <Text style={styles.textoSair}>Sair da Conta</Text>
+        <Text style={styles.textoSair}>Sair da conta</Text>
       </TouchableOpacity>
 
       <View style={styles.espacoFinal} />
