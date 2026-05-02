@@ -57,6 +57,14 @@ export default function RootLayout() {
             }} 
           />
 
+          <Stack.Screen
+            name="produtos"
+            options={{
+              title: 'Produtos',
+              headerBackTitle: 'Voltar'
+            }}
+          />
+
         </Stack>
         <StatusBar style="auto" />
       </ThemeProvider>

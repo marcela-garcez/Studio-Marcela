@@ -16,7 +16,7 @@ export default function HomeScreen() {
   const router = useRouter();
 
   const servicos = [
-    { nome: "Corte & Escova", icone: "cut-outline" },
+    { nome: "Corte & Escova", icone: "cut-outline", rota: "/produtos" as const },
     { nome: "Coloração", icone: "color-palette-outline" },
     { nome: "Hidratação", icone: "water-outline" },
     { nome: "Progressiva", icone: "sparkles-outline" },
@@ -61,7 +61,12 @@ export default function HomeScreen() {
 
         <View style={styles.grid}>
           {servicos.map((item, index) => (
-            <TouchableOpacity key={index} style={styles.card} activeOpacity={0.82}>
+            <TouchableOpacity
+              key={index}
+              style={styles.card}
+              activeOpacity={0.82}
+              onPress={() => item.rota && router.push(item.rota)}
+            >
               <View style={styles.iconCircle}>
                 <Ionicons name={item.icone as any} size={24} color="#7C3AED" />
               </View>
