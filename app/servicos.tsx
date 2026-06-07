@@ -18,9 +18,9 @@ import {
   useWindowDimensions,
 } from "react-native";
 
-import { serviceService } from "../../src/services/productd_services";
-import { Service } from "../../src/types/Service";
-import { showAlert, showConfirm } from "../../src/utils/feedback";
+import { serviceService } from "../src/services/productd_services";
+import { Service } from "../src/types/Service";
+import { showAlert, showConfirm } from "../src/utils/feedback";
 
 type FormularioServico = {
   nome: string;

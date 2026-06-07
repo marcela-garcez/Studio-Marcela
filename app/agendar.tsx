@@ -1,8 +1,8 @@
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useState } from "react";
-import { useAgendamento } from "../../context/AgendamentosContext";
-import { showAlert } from "../../src/utils/feedback";
+import { useAgendamento } from "../context/AgendamentosContext";
+import { showAlert } from "../src/utils/feedback";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect, useRouter } from "expo-router";
 

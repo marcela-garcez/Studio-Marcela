@@ -42,26 +42,6 @@ export default function TabLayout() {
       />
 
       <Tabs.Screen
-        name="servicos"
-        options={{
-          title: "Servicos",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "cut" : "cut-outline"} size={24} color={color} />
-          ),
-        }}
-      />
-
-      <Tabs.Screen
-        name="agendar"
-        options={{
-          title: "Agendar",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "calendar" : "calendar-outline"} size={24} color={color} />
-          ),
-        }}
-      />
-
-      <Tabs.Screen
         name="perfil"
         options={{
           title: "Perfil",

@@ -18,7 +18,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 import ProductCard from '../components/ProductCard';
-import { useProduct } from '../hoocks/useProduct';
+import { useProduct } from '../hooks/useProduct';
 import { Product } from '../types/Product';
 import { showAlert, showConfirm } from '../utils/feedback';
 

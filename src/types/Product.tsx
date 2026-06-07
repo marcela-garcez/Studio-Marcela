@@ -8,5 +8,5 @@ export interface Product {
 
 export interface ProductWithId {
   record: Product;
-  metadede: string;
+  metadata: string;
 }

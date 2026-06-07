@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "924458165808",
+    "project_id": "meuappfcm-77c32",
+    "storage_bucket": "meuappfcm-77c32.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:924458165808:android:bb8af48dbbae7dcfd0aff5",
+        "android_client_info": {
+          "package_name": "com.meuapp.fcm"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDdfVMBwsrEyJ3tb8t3ePJWiqf1oPZbUbk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
