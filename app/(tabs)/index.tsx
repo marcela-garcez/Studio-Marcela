@@ -15,13 +15,6 @@ import { Ionicons } from "@expo/vector-icons";
 export default function HomeScreen() {
   const router = useRouter();
 
-  const servicos = [
-    { nome: "Corte & Escova", icone: "cut-outline", rota: "/produtos" as const },
-    { nome: "Coloração", icone: "color-palette-outline" },
-    { nome: "Hidratação", icone: "water-outline" },
-    { nome: "Progressiva", icone: "sparkles-outline" },
-  ];
-
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
@@ -41,40 +34,48 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        <View style={styles.actionContainer}>
-          <TouchableOpacity
-            activeOpacity={0.92}
-            style={styles.botaoPrincipal}
-            onPress={() => router.push("/agendar")}
-          >
-            <Ionicons name="calendar-outline" size={20} color="#FFF" />
-            <Text style={styles.botaoTexto}>AGENDAR HORÁRIO</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Destaques do studio</Text>
-          <TouchableOpacity onPress={() => router.push("/servicos")}>
-            <Text style={styles.verTodos}>Ver serviços</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.grid}>
-          {servicos.map((item, index) => (
+        <View style={styles.quickAccessSection}>
+          <Text style={styles.quickAccessTitle}>Acesso Rápido</Text>
+          <View style={styles.quickAccessGrid}>
             <TouchableOpacity
-              key={index}
-              style={styles.card}
-              activeOpacity={0.82}
-              onPress={() => item.rota && router.push(item.rota)}
+              activeOpacity={0.86}
+              style={styles.quickAccessButton}
+              onPress={() => router.push("/servicos")}
             >
-              <View style={styles.iconCircle}>
-                <Ionicons name={item.icone as any} size={24} color="#7C3AED" />
+              <View style={styles.quickAccessIcon}>
+                <Ionicons name="cut-outline" size={24} color="#7C3AED" />
               </View>
-              <Text style={styles.cardTitulo}>{item.nome}</Text>
+              <Text style={styles.quickAccessText}>Serviços</Text>
+              <Ionicons name="chevron-forward" size={18} color="#A78BFA" />
             </TouchableOpacity>
-          ))}
+
+            <TouchableOpacity
+              activeOpacity={0.86}
+              style={styles.quickAccessButton}
+              onPress={() => router.push("/agendar")}
+            >
+              <View style={styles.quickAccessIcon}>
+                <Ionicons name="calendar-outline" size={24} color="#7C3AED" />
+              </View>
+              <Text style={styles.quickAccessText}>Agendar Horário</Text>
+              <Ionicons name="chevron-forward" size={18} color="#A78BFA" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.86}
+              style={styles.quickAccessButton}
+              onPress={() => router.push("/Produto")}
+            >
+              <View style={styles.quickAccessIcon}>
+                <Ionicons name="bag-handle-outline" size={24} color="#7C3AED" />
+              </View>
+              <Text style={styles.quickAccessText}>Produtos</Text>
+              <Ionicons name="chevron-forward" size={18} color="#A78BFA" />
+            </TouchableOpacity>
+          </View>
         </View>
 
+      
         <View style={styles.promocaoCard}>
           <View style={styles.promoGlow} />
           <Text style={styles.promoTag}>OFERTA DA SEMANA</Text>
@@ -161,6 +162,50 @@ const styles = StyleSheet.create({
     fontSize: 16,
     letterSpacing: 0.8,
     marginLeft: 10,
+  },
+  quickAccessSection: {
+    paddingHorizontal: 20,
+    marginTop: 26,
+  },
+  quickAccessTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#221431",
+    marginBottom: 14,
+  },
+  quickAccessGrid: {
+    gap: 12,
+  },
+  quickAccessButton: {
+    backgroundColor: "#FFF",
+    minHeight: 78,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: "#EEE6FF",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    shadowColor: "#2E1065",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.07,
+    shadowRadius: 16,
+    elevation: 3,
+  },
+  quickAccessIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: "#F3E8FF",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 14,
+  },
+  quickAccessText: {
+    flex: 1,
+    color: "#44305F",
+    fontSize: 16,
+    fontWeight: "800",
   },
   sectionHeader: {
     flexDirection: "row",

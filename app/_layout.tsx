@@ -23,11 +23,11 @@ export default function RootLayout() {
             headerStyle: {
               backgroundColor: '#FBFBFF',
             },
-            headerTintColor: '#8A2BE2', // Cor roxa premium nos botões de voltar
+            headerTintColor: '#8A2BE2',
             headerTitleStyle: {
               fontWeight: '800',
             },
-            headerShadowVisible: false, // Remove a linha feia do topo
+            headerShadowVisible: false, 
           }}
         >
           {/* Configuração das telas principais */}
@@ -58,9 +58,41 @@ export default function RootLayout() {
           />
 
           <Stack.Screen
-            name="produtos"
+            name="servicos"
+            options={{
+              title: 'Serviços',
+              headerBackTitle: 'Voltar'
+            }}
+          />
+
+          <Stack.Screen
+            name="agendar"
+            options={{
+              title: 'Agendar Horário',
+              headerBackTitle: 'Voltar'
+            }}
+          />
+
+          <Stack.Screen
+            name="Produto"
             options={{
               title: 'Produtos',
+              headerBackTitle: 'Voltar'
+            }}
+          />
+
+          <Stack.Screen
+            name="cupons"
+            options={{
+              title: 'Cupons',
+              headerBackTitle: 'Voltar'
+            }}
+          />
+
+          <Stack.Screen
+            name="notificacoes"
+            options={{
+              title: 'Notificações',
               headerBackTitle: 'Voltar'
             }}
           />
