@@ -1,5 +1,8 @@
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAnalytics, isSupported as isAnalyticsSupported } from "firebase/analytics";
+import {
+  getAnalytics,
+  isSupported as isAnalyticsSupported,
+} from "firebase/analytics";
+import { getApp, getApps, initializeApp } from "firebase/app";
 import {
   getMessaging,
   getToken,
@@ -9,8 +12,7 @@ import {
   type Messaging,
 } from "firebase/messaging";
 import { Platform } from "react-native";
-
-import { firebaseWebConfig, firebaseWebVapidKey } from "./firebaseConfig";
+import { firebaseWebConfig, firebaseWebVapidKey } from "./firebaseWebConfig";
 
 let messagingInstance: Messaging | null = null;
 
@@ -44,7 +46,9 @@ async function registerFirebaseMessagingServiceWorker() {
   }
 
   try {
-    const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+    const registration = await navigator.serviceWorker.register(
+      "/firebase-messaging-sw.js",
+    );
     await registration.update();
     await navigator.serviceWorker.ready;
 
@@ -56,7 +60,11 @@ async function registerFirebaseMessagingServiceWorker() {
 }
 
 export async function registerForWebPushNotifications() {
-  if (Platform.OS !== "web" || typeof window === "undefined" || !("Notification" in window)) {
+  if (
+    Platform.OS !== "web" ||
+    typeof window === "undefined" ||
+    !("Notification" in window)
+  ) {
     throw new Error("WEB_PUSH_UNSUPPORTED");
   }
 
@@ -72,7 +80,8 @@ export async function registerForWebPushNotifications() {
     throw new Error("WEB_PUSH_UNSUPPORTED");
   }
 
-  const serviceWorkerRegistration = await registerFirebaseMessagingServiceWorker();
+  const serviceWorkerRegistration =
+    await registerFirebaseMessagingServiceWorker();
   const token = await getToken(messaging, {
     vapidKey: firebaseWebVapidKey,
     serviceWorkerRegistration,

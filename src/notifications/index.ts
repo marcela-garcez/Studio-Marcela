@@ -1,7 +1,8 @@
 export {
   initializeFirebaseWeb,
   listenToForegroundWebMessages,
-  registerForWebPushNotifications,
+  registerForWebPushNotifications
 } from "./webPushNotifications";
 
-export { firebaseWebConfig, firebaseWebVapidKey } from "./firebaseConfig";
+export { firebaseWebConfig, firebaseWebVapidKey } from "./firebaseWebConfig";
+
