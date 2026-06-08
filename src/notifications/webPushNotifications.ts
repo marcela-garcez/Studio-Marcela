@@ -10,7 +10,7 @@ import {
 } from "firebase/messaging";
 import { Platform } from "react-native";
 
-import { firebaseWebConfig, firebaseWebVapidKey } from "./firebaseWebConfig";
+import { firebaseWebConfig, firebaseWebVapidKey } from "./firebaseConfig";
 
 let messagingInstance: Messaging | null = null;
 

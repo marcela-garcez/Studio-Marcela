@@ -4,4 +4,4 @@ export {
   registerForWebPushNotifications,
 } from "./webPushNotifications";
 
-export { firebaseWebConfig, firebaseWebVapidKey } from "./firebaseWebConfig";
+export { firebaseWebConfig, firebaseWebVapidKey } from "./firebaseConfig";
