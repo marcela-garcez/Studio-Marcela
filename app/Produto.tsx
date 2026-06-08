@@ -128,7 +128,7 @@ export default function ProdutoScreen() {
       await saveShoppingCart(mapShoppingCartItemsToApiItems(nextItems));
       setCarrinho(nextItems);
       showAlert(
-        "Produto adicionado",
+        "Produto adicionado com sucesso",
         `${quantidadeSelecionada} item(ns) de ${produtoSelecionado.nome} foram adicionados ao carrinho.`,
       );
       fecharMenuQuantidade();
